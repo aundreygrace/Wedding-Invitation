@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pawiwahan Ageng Arya &amp; Sekar</title>
+    <meta name="description" content="Undangan pernikahan digital Arya &amp; Sekar.">
+    <meta name="theme-color" content="#1a1008">
+    <!-- Fonts (design.md §5.2). Fallback stack ada di style.css, jadi halaman tetap terbaca jika font gagal dimuat. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Playfair+Display:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<!-- Phase 3 akan menambahkan class "is-locked" pada <body> sebelum undangan dibuka. -->
+<body>
+
+    <!-- ======================================================================
+         01 — OPENING (theatrical cover)
+         Phase 1: markup statis saja. Animasi curtain dibuat di Phase 3.
+         ====================================================================== -->
+    <div id="opening-screen" class="opening">
+        <img class="opening__cloud opening__cloud--back" src="assets/ornaments/cloud-back.webp" alt="" width="461" height="195" aria-hidden="true">
+        <img class="opening__wayang opening__wayang--left" src="assets/ornaments/wayang-left.webp" alt="" width="270" height="442" aria-hidden="true">
+        <img class="opening__wayang opening__wayang--right" src="assets/ornaments/wayang-right.webp" alt="" width="236" height="426" aria-hidden="true">
+
+        <div class="opening__stage">
+            <img class="opening__gunungan" src="assets/ornaments/gunungan.webp" alt="" width="816" height="688" aria-hidden="true">
+            <div class="opening__content">
+                <p class="opening__label">Pawiwahan Ageng</p>
+                <h1 class="opening__names">Arya <span aria-hidden="true">&amp;</span><span class="visually-hidden">dan</span> Sekar</h1>
+                <p class="opening__guest">
+                    Kepada Yth.<br>
+                    <strong id="guest-name" data-config="guest.name">Bapak/Ibu/Saudara/i</strong>
+                </p>
+                <button type="button" id="open-invitation" class="btn btn--primary">BUKA UNDANGAN</button>
+            </div>
+        </div>
+
+        <img class="opening__cloud opening__cloud--front" src="assets/ornaments/cloud-front.webp" alt="" width="510" height="195" aria-hidden="true">
+    </div>
+
+    <main class="invitation-container" id="invitation">
+
+        <!-- ==================================================================
+             02 — HERO
+             ================================================================== -->
+        <section id="hero" class="section section-hero" aria-labelledby="hero-title">
+            <img class="ornament ornament--cloud" src="assets/ornaments/cloud-back.webp" alt="" width="461" height="195" aria-hidden="true">
+            <div class="section__inner reveal-on-scroll">
+                <p class="hero__label">Pawiwahan Ageng</p>
+                <h2 id="hero-title" class="hero__title">Arya <span aria-hidden="true">&amp;</span><span class="visually-hidden">dan</span> Sekar</h2>
+                <p class="hero__date" data-config="ceremony.displayDate">Sabtu Kliwon, 28 Oktober 2024</p>
+            </div>
+            <img class="ornament ornament--pendopo" src="assets/ornaments/pendopo.webp" alt="" width="816" height="610" aria-hidden="true">
+        </section>
+
+        <!-- ==================================================================
+             03 — WEDDING INTRODUCTION
+             ================================================================== -->
+        <section id="wedding-introduction" class="section section-intro" aria-labelledby="intro-title">
+            <div class="section__inner">
+                <img class="ornament ornament--jasmine reveal-on-scroll" src="assets/ornaments/jasmine.webp" alt="" width="444" height="150" loading="lazy" aria-hidden="true">
+                <!-- TODO: teks Arab (jika dipakai) belum ada di design.md. Hapus elemen ini jika tidak diperlukan. -->
+                <p class="arabic reveal-on-scroll" lang="ar" dir="rtl">[ TODO: teks Arab opsional ]</p>
+                <h2 id="intro-title" class="section__title reveal-on-scroll">Undangan Pernikahan</h2>
+                <p class="section__text reveal-on-scroll">
+                    [ TODO: kalimat pembuka undangan — salin dari prototype Stitch ]
+                </p>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             04 — BRIDE & GROOM
+             ================================================================== -->
+        <section id="couple" class="section section-couple" aria-labelledby="couple-title">
+            <div class="section__inner">
+                <header class="section__header reveal-on-scroll">
+                    <h2 id="couple-title" class="section__title">Mempelai</h2>
+                </header>
+
+                <div class="couple__grid">
+                    <article class="portrait-card reveal-on-scroll" id="groom-card">
+                        <figure class="portrait-card__figure">
+                            <div class="portrait-card__frame">
+                                <!-- TODO: ganti dengan foto asli (assets/images/groom.webp) -->
+                                <div class="placeholder" role="img" aria-label="Foto mempelai pria belum tersedia">Foto Mempelai Pria</div>
+                            </div>
+                            <figcaption class="visually-hidden">Potret mempelai pria</figcaption>
+                        </figure>
+                        <h3 class="portrait-card__name" data-config="groom.fullName">Arya Wicaksana</h3>
+                        <p class="portrait-card__parents">Putra dari<br><span data-config="groom.parents">Bpk. Surya Hadiningrat &amp; Ibu Endang Puspitasari</span></p>
+                    </article>
+
+                    <article class="portrait-card reveal-on-scroll" id="bride-card">
+                        <figure class="portrait-card__figure">
+                            <div class="portrait-card__frame">
+                                <!-- TODO: ganti dengan foto asli (assets/images/bride.webp) -->
+                                <div class="placeholder" role="img" aria-label="Foto mempelai wanita belum tersedia">Foto Mempelai Wanita</div>
+                            </div>
+                            <figcaption class="visually-hidden">Potret mempelai wanita</figcaption>
+                        </figure>
+                        <h3 class="portrait-card__name" data-config="bride.fullName">Sekar Arum</h3>
+                        <p class="portrait-card__parents">Putri dari<br><span data-config="bride.parents">Bpk. Bambang Pranoto &amp; Ibu Sri Wardhani</span></p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             05 — WEDDING QUOTE
+             ================================================================== -->
+        <section id="quote" class="section section-quote" aria-labelledby="quote-title">
+            <div class="section__inner">
+                <h2 id="quote-title" class="visually-hidden">Kutipan</h2>
+                <img class="ornament ornament--border reveal-on-scroll" src="assets/ornaments/ornament-border.webp" alt="" width="505" height="136" loading="lazy" aria-hidden="true">
+                <figure class="quote reveal-on-scroll">
+                    <blockquote class="quote__text">
+                        <p>[ TODO: kutipan pernikahan — salin dari prototype Stitch ]</p>
+                    </blockquote>
+                    <figcaption class="quote__source">[ TODO: sumber kutipan ]</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             06 — COUNTDOWN
+             ================================================================== -->
+        <section id="countdown" class="section section-countdown" aria-labelledby="countdown-title">
+            <div class="section__inner">
+                <header class="section__header reveal-on-scroll">
+                    <h2 id="countdown-title" class="section__title">Menuju Hari Bahagia</h2>
+                </header>
+
+                <div class="countdown reveal-on-scroll" role="timer" aria-live="off" aria-label="Hitung mundur menuju acara">
+                    <div class="countdown__item">
+                        <span class="countdown__value" data-countdown="days">00</span>
+                        <span class="countdown__label">Hari</span>
+                    </div>
+                    <div class="countdown__item">
+                        <span class="countdown__value" data-countdown="hours">00</span>
+                        <span class="countdown__label">Jam</span>
+                    </div>
+                    <div class="countdown__item">
+                        <span class="countdown__value" data-countdown="minutes">00</span>
+                        <span class="countdown__label">Menit</span>
+                    </div>
+                    <div class="countdown__item">
+                        <span class="countdown__value" data-countdown="seconds">00</span>
+                        <span class="countdown__label">Detik</span>
+                    </div>
+                </div>
+                <p id="countdown-status" class="countdown__status" hidden></p>
+
+                <div class="section__cta reveal-on-scroll">
+                    <button type="button" id="add-to-calendar" class="btn btn--outline">SIMPAN KE KALENDER</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             07 — WEDDING EVENTS
+             ================================================================== -->
+        <section id="events" class="section section-events" aria-labelledby="events-title">
+            <div class="section__inner">
+                <header class="section__header reveal-on-scroll">
+                    <h2 id="events-title" class="section__title">Rangkaian Acara</h2>
+                </header>
+
+                <div class="events__grid">
+                    <article class="card event-card reveal-on-scroll" data-event="akad">
+                        <h3 class="event-card__title">Akad Nikah</h3>
+                        <p class="event-card__date" data-config="ceremony.displayDate">Sabtu Kliwon, 28 Oktober 2024</p>
+                        <p class="event-card__time">Pukul <span>TODO</span></p>
+                        <p class="event-card__venue">Ballroom Sasana Kencana</p>
+                    </article>
+
+                    <article class="card event-card reveal-on-scroll" data-event="resepsi">
+                        <h3 class="event-card__title">Resepsi</h3>
+                        <p class="event-card__date" data-config="ceremony.displayDate">Sabtu Kliwon, 28 Oktober 2024</p>
+                        <p class="event-card__time">Pukul <span>TODO</span></p>
+                        <p class="event-card__venue">Ballroom Sasana Kencana</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             08 — LOCATION
+             ================================================================== -->
+        <section id="location" class="section section-location" aria-labelledby="location-title">
+            <div class="section__inner">
+                <header class="section__header reveal-on-scroll">
+                    <h2 id="location-title" class="section__title">Lokasi Acara</h2>
+                </header>
+
+                <div class="location__layout">
+                    <div class="location__info reveal-on-scroll">
+                        <h3 class="location__venue" data-config="ceremony.venue">Ballroom Sasana Kencana</h3>
+                        <address class="location__address" data-config="ceremony.address">Jl. Slamet Riyadi No. 240, Laweyan, Surakarta, Jawa Tengah</address>
+                        <div class="location__actions">
+                            <!-- href diisi dari config.js (Phase 6). Tanpa URL -> tombol disabled. -->
+                            <a id="btn-google-maps" class="btn btn--primary" href="#" target="_blank" rel="noopener noreferrer">BUKA GOOGLE MAPS</a>
+                            <a id="btn-waze" class="btn btn--outline" href="#" target="_blank" rel="noopener noreferrer">BUKA WAZE</a>
+                        </div>
+                    </div>
+
+                    <!-- Peta tidak di-embed otomatis; hanya placeholder sampai URL tersedia. -->
+                    <div class="location__map reveal-on-scroll" id="map-container">
+                        <div class="placeholder" role="img" aria-label="Peta lokasi belum tersedia">Peta Lokasi</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             09 — LIVE STREAMING
+             ================================================================== -->
+        <section id="live-streaming" class="section section-streaming" aria-labelledby="streaming-title">
+            <div class="section__inner">
+                <header class="section__header reveal-on-scroll">
+                    <h2 id="streaming-title" class="section__title">Siaran Langsung</h2>
+                </header>
+
+                <div class="card streaming reveal-on-scroll" id="streaming-container">
+                    <p class="streaming__message" id="streaming-message">
+                        Siaran langsung belum tersedia. Tautan akan dibagikan mendekati hari acara.
+                    </p>
+                    <a id="btn-streaming" class="btn btn--primary" href="#" target="_blank" rel="noopener noreferrer" hidden>TONTON SIARAN LANGSUNG</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             10 — LOVE STORY
+             ================================================================== -->
+        <section id="love-story" class="section section-story" aria-labelledby="story-title">
+            <div class="section__inner">
+                <header class="section__header reveal-on-scroll">
+                    <h2 id="story-title" class="section__title">Kisah Kami</h2>
+                </header>
+
+                <ol class="timeline">
+                    <li class="timeline__item reveal-on-scroll">
+                        <span class="timeline__year">TODO</span>
+                        <h3 class="timeline__title">Pertemuan</h3>
+                        <p class="timeline__text">[ TODO: cerita ]</p>
+                    </li>
+                    <li class="timeline__item reveal-on-scroll">
+                        <span class="timeline__year">TODO</span>
+                        <h3 class="timeline__title">Perjalanan</h3>
+                        <p class="timeline__text">[ TODO: cerita ]</p>
+                    </li>
+                    <li class="timeline__item reveal-on-scroll">
+                        <span class="timeline__year">TODO</span>
+                        <h3 class="timeline__title">Lamaran</h3>
+                        <p class="timeline__text">[ TODO: cerita ]</p>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             11 — GALLERY
+             ================================================================== -->
+        <section id="gallery" class="section section-gallery" aria-labelledby="gallery-title">
+            <div class="section__inner">
+                <header class="section__header reveal-on-scroll">
+                    <h2 id="gallery-title" class="section__title">Galeri</h2>
+                </header>
+
+                <!-- Item dirender dari config.gallery (Phase 7). Placeholder statis di bawah dipakai saat gallery kosong. -->
+                <ul class="gallery__grid reveal-on-scroll" id="gallery-grid">
+                    <li class="gallery__item"><div class="placeholder" role="img" aria-label="Foto galeri 1 belum tersedia">Foto 1</div></li>
+                    <li class="gallery__item"><div class="placeholder" role="img" aria-label="Foto galeri 2 belum tersedia">Foto 2</div></li>
+                    <li class="gallery__item"><div class="placeholder" role="img" aria-label="Foto galeri 3 belum tersedia">Foto 3</div></li>
+                    <li class="gallery__item"><div class="placeholder" role="img" aria-label="Foto galeri 4 belum tersedia">Foto 4</div></li>
+                    <li class="gallery__item"><div class="placeholder" role="img" aria-label="Foto galeri 5 belum tersedia">Foto 5</div></li>
+                    <li class="gallery__item"><div class="placeholder" role="img" aria-label="Foto galeri 6 belum tersedia">Foto 6</div></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             12 — VIDEO
+             ================================================================== -->
+        <section id="video" class="section section-video" aria-labelledby="video-title">
+            <div class="section__inner">
+                <header class="section__header reveal-on-scroll">
+                    <h2 id="video-title" class="section__title">Video</h2>
+                </header>
+
+                <figure class="video-card reveal-on-scroll" id="video-container">
+                    <div class="video-card__frame">
+                        <div class="placeholder" role="img" aria-label="Video belum tersedia">Video belum tersedia</div>
+                    </div>
+                </figure>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             13 — DIGITAL GIFT
+             ================================================================== -->
+        <section id="digital-gift" class="section section-gift" aria-labelledby="gift-title">
+            <div class="section__inner">
+                <header class="section__header reveal-on-scroll">
+                    <h2 id="gift-title" class="section__title">Hadiah Digital</h2>
+                    <p class="section__text">[ TODO: kalimat pengantar hadiah — salin dari prototype Stitch ]</p>
+                </header>
+
+                <div class="gift__grid">
+                    <article class="card bank-card reveal-on-scroll" data-bank-index="0">
+                        <h3 class="bank-card__bank">BCA</h3>
+                        <p class="bank-card__number" data-bank-number>8830529144</p>
+                        <p class="bank-card__holder">a.n. <span>Arya Wicaksana</span></p>
+                        <button type="button" class="btn btn--outline" data-copy-account="0" aria-label="Salin nomor rekening BCA">SALIN NOMOR REKENING</button>
+                    </article>
+
+                    <article class="card bank-card reveal-on-scroll" data-bank-index="1">
+                        <h3 class="bank-card__bank">Mandiri</h3>
+                        <p class="bank-card__number" data-bank-number>1380094827110</p>
+                        <p class="bank-card__holder">a.n. <span>Sekar Arum</span></p>
+                        <button type="button" class="btn btn--outline" data-copy-account="1" aria-label="Salin nomor rekening Mandiri">SALIN NOMOR REKENING</button>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             14 — RSVP
+             ================================================================== -->
+        <section id="rsvp" class="section section-rsvp" aria-labelledby="rsvp-title">
+            <div class="section__inner">
+                <header class="section__header reveal-on-scroll">
+                    <h2 id="rsvp-title" class="section__title">Konfirmasi Kehadiran</h2>
+                </header>
+
+                <form id="rsvp-form" class="rsvp-form reveal-on-scroll" novalidate>
+                    <div class="form-field">
+                        <label for="rsvp-name">Nama</label>
+                        <input type="text" id="rsvp-name" name="name" autocomplete="name" required aria-describedby="rsvp-name-error">
+                        <p class="form-field__error" id="rsvp-name-error" role="alert" hidden></p>
+                    </div>
+
+                    <fieldset class="form-field">
+                        <legend>Kehadiran</legend>
+                        <div class="form-field__options">
+                            <label class="option"><input type="radio" name="attendance" value="hadir" required> <span>Hadir</span></label>
+                            <label class="option"><input type="radio" name="attendance" value="tidak-hadir"> <span>Tidak hadir</span></label>
+                        </div>
+                        <p class="form-field__error" id="rsvp-attendance-error" role="alert" hidden></p>
+                    </fieldset>
+
+                    <div class="form-field">
+                        <label for="rsvp-guests">Jumlah tamu</label>
+                        <select id="rsvp-guests" name="guests" aria-describedby="rsvp-guests-error">
+                            <option value="1">1 orang</option>
+                            <option value="2">2 orang</option>
+                            <option value="3">3 orang</option>
+                            <option value="4">4 orang</option>
+                            <option value="5">5 orang</option>
+                        </select>
+                        <p class="form-field__error" id="rsvp-guests-error" role="alert" hidden></p>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="rsvp-message">Ucapan &amp; doa</label>
+                        <textarea id="rsvp-message" name="message" rows="4" maxlength="500" aria-describedby="rsvp-message-error"></textarea>
+                        <p class="form-field__error" id="rsvp-message-error" role="alert" hidden></p>
+                    </div>
+
+                    <button type="submit" class="btn btn--primary" id="rsvp-submit">KIRIM KONFIRMASI</button>
+                    <p class="rsvp-form__status" id="rsvp-status" role="status" aria-live="polite"></p>
+                </form>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             15 — WEDDING WISHES
+             ================================================================== -->
+        <section id="wishes" class="section section-wishes" aria-labelledby="wishes-title">
+            <div class="section__inner">
+                <header class="section__header reveal-on-scroll">
+                    <h2 id="wishes-title" class="section__title">Ucapan &amp; Doa</h2>
+                </header>
+
+                <!-- Dirender dari config.wishes (mock) lewat script.js (Phase 8). -->
+                <ul class="wishes__list reveal-on-scroll" id="wishes-list">
+                    <li class="wishes__empty">Belum ada ucapan.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             16 — CLOSING
+             ================================================================== -->
+        <section id="closing" class="section section-closing" aria-labelledby="closing-title">
+            <div class="section__inner">
+                <img class="ornament ornament--frame reveal-on-scroll" src="assets/ornaments/decorative-frame.webp" alt="" width="350" height="315" loading="lazy" aria-hidden="true">
+                <h2 id="closing-title" class="section__title reveal-on-scroll">Terima Kasih</h2>
+                <p class="section__text reveal-on-scroll">[ TODO: kalimat penutup — salin dari prototype Stitch ]</p>
+                <p class="closing__names reveal-on-scroll">Arya &amp; Sekar</p>
+                <img class="ornament ornament--jasmine reveal-on-scroll" src="assets/ornaments/jasmine.webp" alt="" width="444" height="150" loading="lazy" aria-hidden="true">
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ======================================================================
+         FLOATING UI (satu-satunya yang diizinkan: audio toggle)
+         ====================================================================== -->
+    <button type="button" id="music-toggle" class="audio-toggle" aria-pressed="false" aria-label="Putar musik latar" hidden>
+        <span class="audio-toggle__icon" aria-hidden="true">♪</span>
+    </button>
+
+    <!-- Toast -->
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Lightbox galeri (perilaku dibuat di Phase 7) -->
+    <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Pratinjau foto galeri" hidden>
+        <button type="button" class="lightbox__close" aria-label="Tutup pratinjau">×</button>
+        <button type="button" class="lightbox__nav lightbox__nav--prev" aria-label="Foto sebelumnya">‹</button>
+        <img class="lightbox__image" alt="">
+        <button type="button" class="lightbox__nav lightbox__nav--next" aria-label="Foto berikutnya">›</button>
+    </div>
+
+    <!-- Urutan penting: config dulu, baru script utama. Keduanya script biasa (bukan module). -->
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

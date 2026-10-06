@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Logs & temp
+*.log
+*.tmp
+node_modules/
+
+# Aset mentah / sumber desain (jangan di-commit)
+*.psd
+*.fig
+raw/

@@ -1,0 +1,965 @@
+/* ==========================================================================
+   STYLE — PHASE 2
+   Cakupan: design tokens, typography, global layout, section spacing,
+   responsive system (mobile / tablet / desktop).
+
+   BELUM dikerjakan (phase berikutnya):
+   - Opening curtain & animasi ........ Phase 3
+   - Scroll reveal ..................... Phase 4
+   - Styling detail tiap section ....... Phase 5–8
+   - Accessibility/perf polish ......... Phase 9
+
+   Breakpoint (mobile-first):
+     base      : < 768px   mobile
+     @768px    : tablet
+     @1024px   : desktop
+     @1440px   : large desktop
+   ========================================================================== */
+
+
+/* ========================================
+   DESIGN TOKENS
+======================================== */
+:root {
+    /* ---- Color (design.md §5.1 — tidak boleh diganti) ---- */
+    --color-bg-base: #1a1008;
+    --color-bg-surface: #24160c;
+    --color-bg-surface-elevated: #2f1d10;
+
+    --color-primary-gold: #d4af37;
+    --color-primary-gold-bright: #f3e5ab;
+    --color-primary-gold-muted: #9c7a3c;
+    --color-primary-gold-dim: rgba(212, 175, 55, 0.15);
+
+    --color-text-primary: #fdfaf6;
+    --color-text-secondary: #d8c8b8;
+    --color-text-muted: #9e8b7d;
+
+    --color-border-subtle: rgba(212, 175, 55, 0.22);
+    --color-border-prominent: rgba(212, 175, 55, 0.45);
+
+    /* ---- Typography (design.md §5.2) ---- */
+    --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+    --font-body: "Plus Jakarta Sans", Inter, system-ui, -apple-system, sans-serif;
+    --font-arabic: "Amiri", "Scheherazade New", serif;
+
+    /* Type scale — fluid, minimum 14px untuk teks pendukung */
+    --fs-sm: 0.875rem;                                        /* 14px  label kecil */
+    --fs-base: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);        /* 16–18 body */
+    --fs-md: clamp(1.125rem, 1.04rem + 0.4vw, 1.375rem);      /* 18–22 lead */
+    --fs-lg: clamp(1.375rem, 1.2rem + 0.8vw, 1.875rem);       /* 22–30 h3 */
+    --fs-xl: clamp(1.875rem, 1.4rem + 2.2vw, 3.25rem);        /* 30–52 h2 */
+    --fs-2xl: clamp(2.75rem, 1.6rem + 5.5vw, 6.5rem);         /* 44–104 hero */
+    --fs-count: clamp(1.75rem, 1rem + 3.4vw, 3.75rem);        /* countdown */
+    --fs-arabic: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
+
+    --lh-tight: 1.15;
+    --lh-heading: 1.25;
+    --lh-body: 1.7;
+
+    --ls-label: 0.08em;
+
+    /* ---- Spacing scale ---- */
+    --space-2xs: 4px;
+    --space-xs: 8px;
+    --space-sm: 16px;
+    --space-md: 24px;
+    --space-lg: 40px;
+    --space-xl: 64px;
+    --space-2xl: 96px;
+
+    /* ---- Layout ---- */
+    --gutter: clamp(20px, 5vw, 72px);                  /* padding horizontal section */
+    --section-pad-y: clamp(72px, 4rem + 6vw, 144px);   /* padding vertikal section */
+    --container: 1200px;                               /* lebar konten maksimum */
+    --container-narrow: 720px;                         /* teks / form */
+    --measure: 62ch;                                   /* panjang baris nyaman */
+    --grid-gap: clamp(20px, 3vw, 40px);
+
+    /* ---- Shape ---- */
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --radius-pill: 999px;
+
+    /* ---- Interaction ---- */
+    --tap-min: 48px;
+    --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.35);
+
+    /* ---- Motion tokens (dipakai mulai Phase 3/4) ---- */
+    --ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-reveal: 1100ms;
+    --dur-opening: 1200ms;
+}
+
+
+/* ========================================
+   RESET
+======================================== */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    min-height: 100svh;
+    background: var(--color-bg-base);
+    color: var(--color-text-primary);
+    font-family: var(--font-body);
+    font-size: var(--fs-base);
+    line-height: var(--lh-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+h1, h2, h3, p, figure, blockquote, address, ul, ol, fieldset {
+    margin: 0;
+}
+
+fieldset {
+    padding: 0;
+    border: 0;
+    min-width: 0;
+}
+
+ul, ol {
+    padding: 0;
+    list-style: none;
+}
+
+address {
+    font-style: normal;
+}
+
+button, input, select, textarea {
+    font: inherit;
+    color: inherit;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+
+/* ========================================
+   ACCESSIBILITY BASE
+======================================== */
+:focus-visible {
+    outline: 2px solid var(--color-primary-gold);
+    outline-offset: 3px;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+
+/* ========================================
+   TYPOGRAPHY
+======================================== */
+h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: var(--lh-heading);
+    text-wrap: balance;
+}
+
+p, blockquote, address {
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+}
+
+.section__title {
+    font-size: var(--fs-xl);
+    line-height: var(--lh-heading);
+    color: var(--color-primary-gold-bright);
+}
+
+.section__text {
+    max-width: var(--measure);
+    margin-inline: auto;
+    color: var(--color-text-secondary);
+}
+
+.arabic {
+    font-family: var(--font-arabic);
+    font-size: var(--fs-arabic);
+    line-height: 1.8;
+    color: var(--color-primary-gold);
+}
+
+/* Label kecil di atas judul (hero, opening) */
+.hero__label,
+.opening__label {
+    font-size: var(--fs-sm);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    color: var(--color-primary-gold);
+}
+
+
+/* ========================================
+   GLOBAL LAYOUT
+======================================== */
+.invitation-container {
+    width: 100%;
+}
+
+.section {
+    padding: var(--section-pad-y) var(--gutter);
+    text-align: center;
+}
+
+.section__inner {
+    width: min(100%, var(--container));
+    margin-inline: auto;
+}
+
+.section__header {
+    margin-bottom: var(--space-lg);
+}
+
+.section__header .section__text {
+    margin-top: var(--space-sm);
+}
+
+.section__cta {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--space-lg);
+}
+
+/* Ornamen dekoratif: ukuran dibatasi, selalu di dalam alur dokumen
+   sehingga tidak bisa menutupi teks/foto/tombol. */
+.ornament {
+    margin-inline: auto;
+    pointer-events: none;
+}
+
+.ornament--cloud   { width: clamp(180px, 28vw, 360px); }
+.ornament--jasmine { width: clamp(200px, 30vw, 340px); margin-bottom: var(--space-md); }
+.ornament--border  { width: clamp(240px, 36vw, 440px); margin-bottom: var(--space-md); }
+.ornament--frame   { width: clamp(160px, 22vw, 260px); margin-bottom: var(--space-md); }
+
+
+/* ========================================
+   BUTTON
+======================================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--tap-min);
+    min-width: var(--tap-min);
+    padding: 12px 28px;
+    border: 1px solid var(--color-primary-gold);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-primary-gold-bright);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: var(--ls-label);
+    line-height: 1.3;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.btn--primary {
+    background: var(--color-primary-gold);
+    color: var(--color-bg-base);
+}
+
+
+/* ========================================
+   CARD
+======================================== */
+.card {
+    padding: clamp(20px, 3vw, 36px);
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+}
+
+.placeholder {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    min-height: 120px;
+    padding: var(--space-sm);
+    background: var(--color-bg-surface-elevated);
+    border: 1px dashed var(--color-border-prominent);
+    color: var(--color-text-muted);
+    font-size: var(--fs-sm);
+    text-align: center;
+}
+
+
+/* ========================================
+   OPENING (layout statis — Phase 3 membuatnya fixed + animasi)
+   Panggung satu layar: awan atas, [wayang kiri | gunungan+teks | wayang kanan], awan bawah.
+   Ukuran dibatasi lebar DAN tinggi viewport agar muat di layar pendek.
+======================================== */
+.opening {
+    display: grid;
+    /* mobile: awan / panggung / dua wayang berdampingan / awan */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+        "cloud-back cloud-back"
+        "stage stage"
+        "wayang-left wayang-right"
+        "cloud-front cloud-front";
+    align-items: center;
+    justify-items: center;
+    gap: clamp(8px, 2svh, 24px) clamp(8px, 2vw, 32px);
+    min-height: 100svh;
+    padding: clamp(16px, 4svh, 48px) var(--gutter);
+    background: var(--color-bg-surface);
+    text-align: center;
+}
+
+.opening__cloud--back   { grid-area: cloud-back; }
+.opening__cloud--front  { grid-area: cloud-front; }
+.opening__wayang--left  { grid-area: wayang-left;  justify-self: end; }
+.opening__wayang--right { grid-area: wayang-right; justify-self: start; }
+.opening__stage         { grid-area: stage; }
+
+.opening__cloud    { width: clamp(120px, min(30vw, 14svh), 280px); }
+.opening__wayang   { width: clamp(72px, min(26vw, 16svh), 220px); }
+
+.opening__stage {
+    display: grid;
+    justify-items: center;
+    gap: clamp(8px, 1.6svh, 20px);
+    width: min(100%, 360px);
+}
+
+.opening .btn {
+    white-space: nowrap;
+}
+
+.opening__gunungan {
+    width: clamp(110px, min(34vw, 26svh), 280px);
+    margin-inline: auto;
+}
+
+.opening__names {
+    font-size: clamp(2.25rem, 1.4rem + 3.6vw, 4.75rem);
+    line-height: var(--lh-tight);
+    color: var(--color-primary-gold-bright);
+}
+
+.opening__guest {
+    color: var(--color-text-secondary);
+}
+
+.opening__guest strong {
+    display: block;
+    color: var(--color-text-primary);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+
+/* ========================================
+   02 — HERO
+======================================== */
+.section-hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-md);
+    min-height: 100svh;
+    padding-block: clamp(32px, 6svh, var(--section-pad-y));
+}
+
+.section-hero .section__inner {
+    display: grid;
+    gap: var(--space-sm);
+}
+
+.hero__title {
+    font-size: var(--fs-2xl);
+    line-height: var(--lh-tight);
+    color: var(--color-primary-gold-bright);
+}
+
+.hero__date {
+    font-size: var(--fs-md);
+    color: var(--color-text-secondary);
+}
+
+/* Lebar dibatasi oleh tinggi viewport agar tidak membludak di layar pendek (mis. 1024×600) */
+.section-hero .ornament--cloud {
+    width: min(clamp(160px, 28vw, 360px), 30svh);
+}
+
+.ornament--pendopo {
+    width: min(100%, 560px, 48svh);
+}
+
+
+/* ========================================
+   03 — WEDDING INTRODUCTION
+======================================== */
+.section-intro .section__inner {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-md);
+    max-width: var(--container-narrow);
+}
+
+
+/* ========================================
+   04 — BRIDE & GROOM
+======================================== */
+.couple__grid {
+    display: grid;
+    width: min(100%, 1000px);
+    margin-inline: auto;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl) var(--grid-gap);
+    justify-items: center;
+}
+
+.portrait-card {
+    width: min(100%, 380px);
+}
+
+.portrait-card__frame {
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border: 1px solid var(--color-border-prominent);
+    border-radius: var(--radius-md);
+}
+
+.portrait-card__name {
+    margin-top: var(--space-md);
+    font-size: var(--fs-lg);
+    color: var(--color-primary-gold-bright);
+}
+
+.portrait-card__parents {
+    margin-top: var(--space-xs);
+    color: var(--color-text-secondary);
+}
+
+
+/* ========================================
+   05 — WEDDING QUOTE
+======================================== */
+.section-quote .section__inner {
+    display: grid;
+    justify-items: center;
+    max-width: var(--container-narrow);
+}
+
+.quote__text {
+    font-family: var(--font-display);
+    font-size: var(--fs-lg);
+    line-height: 1.5;
+    color: var(--color-text-primary);
+}
+
+.quote__source {
+    margin-top: var(--space-md);
+    color: var(--color-text-muted);
+    font-size: var(--fs-sm);
+}
+
+
+/* ========================================
+   06 — COUNTDOWN
+======================================== */
+.countdown {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(8px, 2vw, 24px);
+    width: min(100%, 720px);
+    margin-inline: auto;
+}
+
+.countdown__item {
+    display: grid;
+    gap: var(--space-2xs);
+    padding: clamp(12px, 2vw, 28px) var(--space-xs);
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+}
+
+.countdown__value {
+    font-family: var(--font-display);
+    font-size: var(--fs-count);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    color: var(--color-primary-gold-bright);
+}
+
+.countdown__label {
+    font-size: var(--fs-sm);
+    color: var(--color-text-secondary);
+}
+
+.countdown__status {
+    margin-top: var(--space-md);
+    color: var(--color-text-secondary);
+}
+
+
+/* ========================================
+   07 — WEDDING EVENTS
+======================================== */
+.events__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--grid-gap);
+    width: min(100%, 900px);
+    margin-inline: auto;
+}
+
+.event-card {
+    display: grid;
+    gap: var(--space-xs);
+}
+
+.event-card__title {
+    font-size: var(--fs-lg);
+    color: var(--color-primary-gold-bright);
+}
+
+.event-card__date,
+.event-card__time {
+    color: var(--color-text-primary);
+}
+
+.event-card__venue {
+    color: var(--color-text-secondary);
+}
+
+
+/* ========================================
+   08 — LOCATION
+======================================== */
+.location__layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--grid-gap);
+    align-items: center;
+}
+
+.location__venue {
+    font-size: var(--fs-lg);
+    color: var(--color-primary-gold-bright);
+}
+
+.location__address {
+    margin-top: var(--space-sm);
+    color: var(--color-text-secondary);
+}
+
+.location__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+}
+
+.location__actions .btn {
+    flex: 1 1 200px;
+    max-width: 320px;
+}
+
+.location__map {
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border: 1px solid var(--color-border-prominent);
+    border-radius: var(--radius-md);
+}
+
+
+/* ========================================
+   09 — LIVE STREAMING
+======================================== */
+.streaming {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-md);
+    width: min(100%, var(--container-narrow));
+    margin-inline: auto;
+}
+
+.streaming__message {
+    color: var(--color-text-secondary);
+}
+
+
+/* ========================================
+   10 — LOVE STORY
+======================================== */
+.timeline {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+    width: min(100%, 560px);
+    margin-inline: auto;
+}
+
+.timeline__item {
+    display: grid;
+    gap: var(--space-xs);
+}
+
+.timeline__year {
+    font-size: var(--fs-sm);
+    letter-spacing: var(--ls-label);
+    color: var(--color-primary-gold);
+}
+
+.timeline__title {
+    font-size: var(--fs-lg);
+    color: var(--color-primary-gold-bright);
+}
+
+.timeline__text {
+    color: var(--color-text-secondary);
+}
+
+
+/* ========================================
+   11 — GALLERY
+======================================== */
+.gallery__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(8px, 2vw, 20px);
+}
+
+.gallery__item {
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+}
+
+
+/* ========================================
+   12 — VIDEO
+======================================== */
+.video-card {
+    width: min(100%, 960px);
+    margin-inline: auto;
+}
+
+.video-card__frame {
+    aspect-ratio: 16 / 9;          /* mencegah layout shift */
+    overflow: hidden;
+    border: 1px solid var(--color-border-prominent);
+    border-radius: var(--radius-md);
+}
+
+
+/* ========================================
+   13 — DIGITAL GIFT
+======================================== */
+.gift__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--grid-gap);
+    width: min(100%, 900px);
+    margin-inline: auto;
+}
+
+.bank-card {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-sm);
+}
+
+.bank-card__bank {
+    font-size: var(--fs-lg);
+    color: var(--color-primary-gold-bright);
+}
+
+.bank-card__number {
+    font-family: var(--font-display);
+    font-size: var(--fs-md);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
+}
+
+.bank-card__holder {
+    color: var(--color-text-secondary);
+}
+
+
+/* ========================================
+   14 — RSVP
+======================================== */
+.rsvp-form {
+    display: grid;
+    gap: var(--space-md);
+    width: min(100%, var(--container-narrow));
+    margin-inline: auto;
+    text-align: left;
+}
+
+.form-field {
+    display: grid;
+    gap: var(--space-xs);
+}
+
+.form-field label,
+.form-field legend {
+    padding: 0;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.form-field input[type="text"],
+.form-field select,
+.form-field textarea {
+    width: 100%;
+    min-height: var(--tap-min);
+    padding: 12px 16px;
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-prominent);
+    border-radius: var(--radius-sm);
+}
+
+.form-field textarea {
+    resize: vertical;
+}
+
+.form-field__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+}
+
+.option {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    min-height: var(--tap-min);
+    padding: 0 var(--space-sm);
+    border: 1px solid var(--color-border-prominent);
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.option input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--color-primary-gold);
+}
+
+.form-field__error {
+    font-size: var(--fs-sm);
+    color: #ffb4a8;
+}
+
+.rsvp-form .btn {
+    justify-self: center;
+    width: min(100%, 320px);
+}
+
+.rsvp-form__status {
+    text-align: center;
+    color: var(--color-text-secondary);
+}
+
+
+/* ========================================
+   15 — WEDDING WISHES
+======================================== */
+.wishes__list {
+    display: grid;
+    gap: var(--space-sm);
+    width: min(100%, var(--container-narrow));
+    margin-inline: auto;
+    text-align: left;
+}
+
+.wishes__empty {
+    text-align: center;
+    color: var(--color-text-muted);
+}
+
+
+/* ========================================
+   16 — CLOSING
+======================================== */
+.section-closing .section__inner {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-md);
+    max-width: var(--container-narrow);
+}
+
+.closing__names {
+    font-family: var(--font-display);
+    font-size: var(--fs-xl);
+    color: var(--color-primary-gold-bright);
+}
+
+
+/* ========================================
+   FLOATING UI (struktur dasar; styling final di Phase 8)
+======================================== */
+.toast {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 24px;
+    margin-inline: auto;
+    width: max-content;
+    max-width: calc(100% - 2 * var(--space-md));
+    padding: 12px 20px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface-elevated);
+    border: 1px solid var(--color-border-prominent);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.toast:empty {
+    display: none;
+}
+
+
+/* ==========================================================================
+   RESPONSIVE — TABLET (≥ 768px)
+   ========================================================================== */
+@media (min-width: 768px) {
+    .opening {
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        grid-template-areas:
+            "cloud-back cloud-back cloud-back"
+            "wayang-left stage wayang-right"
+            "cloud-front cloud-front cloud-front";
+    }
+
+    .opening__cloud  { width: clamp(120px, min(30vw, 22svh), 280px); }
+    .opening__wayang { width: clamp(64px, min(22vw, 26svh), 220px); }
+    .opening__stage  { width: min(56vw, 440px); }
+
+    .couple__grid,
+    .events__grid,
+    .gift__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .couple__grid {
+        align-items: start;
+    }
+
+    .gallery__grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    /* Lokasi: info + peta berdampingan, teks info rata kiri */
+    .location__layout {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .location__info {
+        text-align: left;
+    }
+
+    .location__actions {
+        justify-content: flex-start;
+    }
+
+    .location__actions .btn {
+        flex: 0 1 auto;
+    }
+
+    .location__map {
+        aspect-ratio: 1 / 1;
+    }
+}
+
+
+/* ==========================================================================
+   RESPONSIVE — DESKTOP (≥ 1024px)
+   ========================================================================== */
+@media (min-width: 1024px) {
+    .couple__grid {
+        gap: var(--space-xl) clamp(48px, 6vw, 96px);
+    }
+
+    .portrait-card {
+        width: min(100%, 420px);
+    }
+
+    /* Love story: tiga kolom berdampingan dengan garis penghubung */
+    .timeline {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--grid-gap);
+        width: 100%;
+    }
+
+    .timeline__item {
+        padding-top: var(--space-md);
+        border-top: 1px solid var(--color-border-prominent);
+    }
+
+    .location__layout {
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: clamp(40px, 5vw, 80px);
+    }
+
+    .location__map {
+        aspect-ratio: 16 / 10;
+    }
+}
+
+
+/* ==========================================================================
+   RESPONSIVE — LARGE DESKTOP (≥ 1440px)
+   ========================================================================== */
+@media (min-width: 1440px) {
+    :root {
+        --container: 1320px;
+    }
+
+    .gallery__grid {
+        width: min(100%, 1100px);
+        margin-inline: auto;
+    }
+}
+
+
+/* ==========================================================================
+   SHORT LANDSCAPE VIEWPORTS (mis. 1024×600) — berbasis tinggi, bukan hack per-device
+   ========================================================================== */
+@media (max-height: 700px) and (min-width: 768px) {
+    :root {
+        --section-pad-y: clamp(56px, 8vh, 96px);
+    }
+}
