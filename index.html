@@ -190,7 +190,7 @@
 
   <!-- 06 — COUNTDOWN SECTION (Ngetang Dinten) -->
   <section class="section countdown" id="countdown">
-    <!-- <div class="countdown__bg" aria-hidden="true">
+    <div class="countdown__bg" aria-hidden="true">
       <img src="assets/ornaments/10_decorative-frame.png" alt="" />
       <img class="countdown__bg--flip" src="assets/ornaments/10_decorative-frame.png" alt="" />
     </div>
@@ -199,10 +199,10 @@
       <span class="reveal-item delay-0 label-caps countdown__eyebrow">Ngetang Dinten</span>
       <h2 class="reveal-item delay-100 headline-lg countdown__title">Menuju Hari Bahagia</h2>
       <p class="reveal-item delay-100 body-md countdown__lead">
-        Kanthi berkahing Gusti Ingkang Maha Kuwaos, dinten ingkang pinilih badhe kalampahan ing:
-      </p> -->
-<!-- 
-      <div class="reveal-item delay-200 countdown__grid" id="countdown-timer">
+        Dengan memohon berkah dan rahmat Tuhan Yang Maha Kuasa, hari bahagia yang telah kami nantikan akan berlangsung pada:
+      </p>
+
+      <div class="reveal-item delay-200 countdown__grid" id="countdown-timer" role="timer" aria-live="polite" aria-label="Hitung mundur menuju hari pernikahan">
         <div class="countdown-badge">
           <img class="countdown-badge__icon" src="assets/ornaments/09_jasmine.png" alt="" aria-hidden="true" />
           <span class="countdown-num" id="timer-days">00</span>
@@ -224,7 +224,9 @@
           <span class="label-caps">Detik</span>
         </div>
       </div>
-    </div> -->
+
+      <p class="body-md countdown__lead" id="countdown-message" role="status" aria-live="polite" style="display: none;"></p>
+    </div>
   </section>
 
   <!-- 07 — WEDDING EVENTS (Tata Adicara) -->
@@ -399,52 +401,111 @@
     </div> -->
   </section>
 
+  <!-- ========================================== -->
+  <!-- START: Timeline Love Story Section         -->
+  <!-- ========================================== -->
   <!-- 10 — LOVE STORY (Babad Tresna) -->
   <section class="section story" id="story">
+    <!-- Scoped no-JS safety net: reveal items in this section must stay visible if JavaScript fails to run -->
+    <noscript>
+      <style>
+        #story .reveal-item { opacity: 1 !important; transform: none !important; transition: none !important; }
+      </style>
+    </noscript>
+
     <div class="reveal-item delay-0 section-heading">
       <span class="label-caps section-heading__eyebrow">Lelampahan Tresna</span>
-      <!-- <h2 class="headline-lg section-heading__title">Babad Tresna</h2>
+      <h2 class="headline-lg section-heading__title">Kisah Cinta Arya & Sekar</h2>
       <div class="section-heading__rule" aria-hidden="true"></div>
     </div>
 
-    <ol class="story__timeline">
-      <li class="reveal-item delay-100 story__item story__item--right">
-        <div class="story__card">
-          <span class="label-caps">Tahun 2019</span>
-          <h4 class="headline-sm">Pertemuan Pertama</h4>
+    <ol class="story__timeline" aria-label="Lini masa perjalanan kisah cinta Arya dan Sekar secara kronologis">
+
+      <li class="story__item story__item--right">
+        <article class="reveal-item delay-100 story__card" aria-labelledby="story-heading-1">
+          <figure class="reveal-item reveal-photo delay-200 story__photo">
+            <img class="story__photo-img" src="assets/images/story-pertemuan-1.png" alt="Dokumentasi momen pertemuan pertama Arya dan Sekar" loading="lazy" onerror="this.remove()" />
+            <span class="story__photo-placeholder" aria-hidden="true">
+              <span class="material-symbols-outlined">add_a_photo</span>
+              <span class="label-caps">Foto Segera Hadir</span>
+            </span>
+            <img class="story__photo-corner story__photo-corner--tl" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+            <img class="story__photo-corner story__photo-corner--tr" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+            <img class="story__photo-corner story__photo-corner--bl" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+            <img class="story__photo-corner story__photo-corner--br" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+          </figure>
+          <time class="label-caps" datetime="2019">Mei 2020</time>
+          <h4 id="story-heading-1" class="headline-sm">Pertemuan Pertama</h4>
           <p class="body-sm">Kisah kami dimulai saat bekerja bersama dalam pementasan Sendratari Ramayana di Prambanan. Dari pertemuan sederhana itu, tumbuh rasa yang membawa kami semakin dekat.</p>
-        </div>
-        <span class="story__node"><span class="material-symbols-outlined" aria-hidden="true">favorite</span></span>
+        </article>
+        <span class="story__node" aria-hidden="true"><span class="material-symbols-outlined">favorite</span></span>
       </li>
 
-      <li class="reveal-item delay-100 story__item story__item--left">
-        <span class="story__node"><span class="material-symbols-outlined" aria-hidden="true">handshake</span></span>
-        <div class="story__card">
-          <span class="label-caps">Tahun 2022</span>
-          <h4 class="headline-sm">Menjalin Komitmen</h4>
+      <li class="story__item story__item--left">
+        <span class="story__node" aria-hidden="true"><span class="material-symbols-outlined">handshake</span></span>
+        <article class="reveal-item delay-100 story__card" aria-labelledby="story-heading-2">
+          <figure class="reveal-item reveal-photo delay-200 story__photo">
+            <img class="story__photo-img" src="assets/images/story-pertemuan-2.png" alt="Dokumentasi momen menjalin komitmen Arya dan Sekar bersama restu keluarga" loading="lazy" onerror="this.remove()" />
+            <span class="story__photo-placeholder" aria-hidden="true">
+              <span class="material-symbols-outlined">add_a_photo</span>
+              <span class="label-caps">Foto Segera Hadir</span>
+            </span>
+            <img class="story__photo-corner story__photo-corner--tl" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+            <img class="story__photo-corner story__photo-corner--tr" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+            <img class="story__photo-corner story__photo-corner--bl" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+            <img class="story__photo-corner story__photo-corner--br" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+          </figure>
+          <time class="label-caps" datetime="2022">Mei 2025</time>
+          <h4 id="story-heading-2" class="headline-sm">Menjalin Komitmen</h4>
           <p class="body-sm">Setelah berdiskusi bersama, kami memohon doa dan restu orang tua untuk melangkah ke tahap hubungan yang lebih serius dan membangun kehidupan bersama.</p>
-        </div>
+        </article>
       </li>
 
-      <li class="reveal-item delay-100 story__item story__item--right">
-        <div class="story__card">
-          <span class="label-caps">Tahun 2024</span>
-          <h4 class="headline-sm">Lamaran (The Engagement)</h4>
+      <li class="story__item story__item--right">
+        <article class="reveal-item delay-100 story__card" aria-labelledby="story-heading-3">
+          <figure class="reveal-item reveal-photo delay-200 story__photo">
+            <img class="story__photo-img" src="assets/images/story-pertemuan-3.png" alt="Dokumentasi prosesi lamaran adat Jawa Arya dan Sekar" loading="lazy" onerror="this.remove()" />
+            <span class="story__photo-placeholder" aria-hidden="true">
+              <span class="material-symbols-outlined">add_a_photo</span>
+              <span class="label-caps">Foto Segera Hadir</span>
+            </span>
+            <img class="story__photo-corner story__photo-corner--tl" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+            <img class="story__photo-corner story__photo-corner--tr" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+            <img class="story__photo-corner story__photo-corner--bl" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+            <img class="story__photo-corner story__photo-corner--br" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+          </figure>
+          <time class="label-caps" datetime="2024">Oktober 2026</time>
+          <h4 id="story-heading-3" class="headline-sm">Lamaran (The Engagement)</h4>
           <p class="body-sm">Kami melangsungkan prosesi lamaran dengan tradisi Jawa. Penyerahan tanda pengikat menjadi simbol kesungguhan dan komitmen kedua keluarga untuk menyatukan kami.</p>
-        </div>
-        <span class="story__node"><span class="material-symbols-outlined" aria-hidden="true">ring_volume</span></span>
+        </article>
+        <span class="story__node" aria-hidden="true"><span class="material-symbols-outlined">ring_volume</span></span>
       </li>
 
-      <li class="reveal-item delay-100 story__item story__item--left">
-        <span class="story__node"><span class="material-symbols-outlined" aria-hidden="true">church</span></span>
-        <div class="story__card">
-          <span class="label-caps">Mei 2025</span>
-          <h4 class="headline-sm">Hari Pernikahan</h4>
+      <li class="story__item story__item--left">
+        <span class="story__node" aria-hidden="true"><span class="material-symbols-outlined">church</span></span>
+        <article class="reveal-item delay-100 story__card" aria-labelledby="story-heading-4">
+          <figure class="reveal-item reveal-photo delay-200 story__photo">
+            <img class="story__photo-img" src="assets/images/story-pertemuan-4.png" alt="Dokumentasi hari pernikahan Arya dan Sekar" loading="lazy" onerror="this.remove()" />
+            <span class="story__photo-placeholder" aria-hidden="true">
+              <span class="material-symbols-outlined">add_a_photo</span>
+              <span class="label-caps">Foto Segera Hadir</span>
+            </span>
+            <img class="story__photo-corner story__photo-corner--tl" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+            <img class="story__photo-corner story__photo-corner--tr" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+            <img class="story__photo-corner story__photo-corner--bl" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+            <img class="story__photo-corner story__photo-corner--br" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
+          </figure>
+          <time class="label-caps" datetime="2026-12">Desember 2026</time>
+          <h4 id="story-heading-4" class="headline-sm">Hari Pernikahan</h4>
           <p class="body-sm">Hari yang kami nantikan: mengikat janji sebagai pasangan hidup di hadapan Tuhan dan keluarga, dengan harapan membangun rumah tangga yang penuh kasih dan keberkahan.</p>
-        </div>
+        </article>
       </li>
-    </ol> -->
+
+    </ol>
   </section>
+  <!-- ========================================== -->
+  <!-- END: Timeline Love Story Section           -->
+  <!-- ========================================== -->
 
   <!-- 11 — GALLERY (Langensari Visual) -->
   <section class="section gallery" id="gallery">

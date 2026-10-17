@@ -18,7 +18,13 @@
       date: {
         // ISO datetime used by the live countdown (Akad Nikah start time, WIB / UTC+7)
         targetISO: '2026-12-24T08:00:00+07:00',
+        // ISO datetime when the countdown switches from the wedding prayer to the thank-you message (WIB / UTC+7)
+        thankYouISO: '2026-12-24T14:00:00+07:00',
         displayLabel: 'Kamis, 24 Desember 2026',
+      },
+      messages: {
+        doa: 'Bismillahirrahmanirrahim. Semoga Allah SWT melimpahkan keberkahan dalam ikatan suci Arya dan Sekar, menjadikan rumah tangga yang sakinah, mawaddah, warahmah, serta senantiasa dipenuhi cinta, kesabaran, dan kebahagiaan.',
+        thanks: 'Terima kasih atas doa, restu, dan kebahagiaan yang telah Anda bagikan kepada Arya dan Sekar. Semoga kebaikan senantiasa menyertai kita semua.',
       },
       events: {
         akad: {
@@ -69,6 +75,8 @@
       toast: document.getElementById('toast-notification'),
       toastMessage: document.getElementById('toast-message'),
   
+      countdownTimer: document.getElementById('countdown-timer'),
+      countdownMessage: document.getElementById('countdown-message'),
       timerDays: document.getElementById('timer-days'),
       timerHours: document.getElementById('timer-hours'),
       timerMinutes: document.getElementById('timer-minutes'),
@@ -224,33 +232,88 @@
     // COUNTDOWN
     // ==========================================================================
   
-    /** Updates the live countdown badges toward the wedding date. */
-    function updateCountdown() {
-      const targetDate = new Date(weddingData.date.targetISO).getTime();
-      const now = Date.now();
-      const distance = targetDate - now;
+    let countdownIntervalId = null;
   
-      if (distance <= 0) {
-        [dom.timerDays, dom.timerHours, dom.timerMinutes, dom.timerSeconds].forEach((el) => {
-          if (el) el.textContent = '00';
-        });
-        return;
-      }
-  
-      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-  
-      if (dom.timerDays) dom.timerDays.textContent = pad2(days);
-      if (dom.timerHours) dom.timerHours.textContent = pad2(hours);
-      if (dom.timerMinutes) dom.timerMinutes.textContent = pad2(minutes);
-      if (dom.timerSeconds) dom.timerSeconds.textContent = pad2(seconds);
+    /** Shows the numeric timer grid and hides the status message. */
+    function showCountdownTimer() {
+      if (dom.countdownTimer) dom.countdownTimer.style.display = '';
+      if (dom.countdownMessage) dom.countdownMessage.style.display = 'none';
     }
   
+    /** Hides the numeric timer grid and shows the given status message. */
+    function showCountdownMessage(text) {
+      if (dom.countdownTimer) dom.countdownTimer.style.display = 'none';
+      if (dom.countdownMessage) {
+        dom.countdownMessage.textContent = text;
+        dom.countdownMessage.style.display = '';
+      }
+    }
+  
+    /**
+     * Updates the countdown area based on the current time relative to the
+     * wedding schedule (all thresholds are defined in WIB / UTC+7 via the
+     * ISO offsets in weddingData, so the comparison is correct regardless of
+     * the viewer's local timezone).
+     *
+     * Returns the active phase: 'before' | 'doa' | 'thanks'.
+     *
+     * @param {number} [nowOverride] - optional epoch ms, used for testing.
+     */
+    function updateCountdown(nowOverride) {
+      const now = typeof nowOverride === 'number' ? nowOverride : Date.now();
+      const akadStart = new Date(weddingData.date.targetISO).getTime();
+      const thankYouStart = new Date(weddingData.date.thankYouISO).getTime();
+  
+      // Kondisi 1 — sebelum pukul 08.00 WIB: tampilkan countdown menuju acara.
+      if (now < akadStart) {
+        showCountdownTimer();
+  
+        const distance = Math.max(akadStart - now, 0);
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+  
+        if (dom.timerDays) dom.timerDays.textContent = pad2(days);
+        if (dom.timerHours) dom.timerHours.textContent = pad2(hours);
+        if (dom.timerMinutes) dom.timerMinutes.textContent = pad2(minutes);
+        if (dom.timerSeconds) dom.timerSeconds.textContent = pad2(seconds);
+  
+        return 'before';
+      }
+  
+      // Kondisi 2 — pukul 08.00 s.d. sebelum 14.00 WIB: tampilkan doa pernikahan.
+      if (now < thankYouStart) {
+        showCountdownMessage(weddingData.messages.doa);
+        return 'doa';
+      }
+  
+      // Kondisi 3 — mulai pukul 14.00 WIB dan seterusnya: tampilkan ucapan terima kasih.
+      showCountdownMessage(weddingData.messages.thanks);
+      return 'thanks';
+    }
+  
+    /** Starts the live countdown loop, guarding against duplicate intervals. */
     function initCountdown() {
-      updateCountdown();
-      window.setInterval(updateCountdown, 1000);
+      // Pastikan tidak ada interval ganda jika initCountdown terpanggil lebih dari sekali.
+      if (countdownIntervalId !== null) {
+        window.clearInterval(countdownIntervalId);
+        countdownIntervalId = null;
+      }
+  
+      const phase = updateCountdown();
+  
+      // Fase 'thanks' bersifat permanen (tidak akan berubah lagi), jadi interval
+      // tidak perlu dijalankan terus-menerus.
+      if (phase === 'thanks') return;
+  
+      countdownIntervalId = window.setInterval(() => {
+        const currentPhase = updateCountdown();
+        if (currentPhase === 'thanks' && countdownIntervalId !== null) {
+          window.clearInterval(countdownIntervalId);
+          countdownIntervalId = null;
+        }
+      }, 1000);
     }
   
     // ==========================================================================
