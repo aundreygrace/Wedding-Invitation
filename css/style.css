@@ -1,20 +1,60 @@
-/* ==========================================================================
-   WEDDING INVITATION — ARYA & SEKAR
-   Royal Javanese Elegance Design System
-   Refactored from Google Stitch prototype (visual source of truth preserved)
-   ========================================================================== */
 
 /* ==========================================================================
-   1. DESIGN TOKENS
+   PANDUAN UNTUK DEVELOPER (FILE-LEVEL OVERVIEW)
+   ==========================================================================
+   Arsitektur stylesheet ini dibagi menjadi 14 bagian bernomor (lihat judul
+   "N. NAMA-BAGIAN" di seluruh file). Urutan ini SENGAJA mengikuti prinsip
+   ITCSS/Cascade-aware: token global → reset → tipografi → layout → komponen
+   spesifik → animasi → fine-tuning responsif → aksesibilitas. Jangan
+   memindahkan sebuah blok ke atas definisi token (:root) miliknya, karena
+   banyak selector di bawah bergantung pada custom property yang didefinisikan
+   di Bagian 1.
+
+   PETA BAGIAN:
+     1. DESIGN TOKENS            -> variabel warna, tipografi, spacing, radius
+     2. RESET / BASE             -> normalisasi lintas-browser
+     3. TYPOGRAPHY               -> kelas utility teks (.display-hero, .body-sm, dst.)
+     4. GLOBAL LAYOUT            -> .site-main, .section, .section-heading
+     5. OPENING CURTAIN          -> overlay sampul pembuka (lihat PDF: Arsitektur Opening Envelope)
+     6. BUTTONS & SHARED COMP.   -> .btn, audio controller, toast
+     7. WEDDING SECTIONS         -> satu blok CSS per <section> di index.html
+     8–9. COMPONENTS/FORMS       -> catatan silang (sudah tercakup di atas)
+     10. ANIMATIONS              -> @keyframes + sistem scroll-reveal (.reveal-item)
+     11. RESPONSIVE              -> penyesuaian breakpoint tambahan
+     12. ACCESSIBILITY           -> focus ring, target sentuh minimum 44px
+     13. REDUCED MOTION          -> @media (prefers-reduced-motion: reduce)
+     14. MOBILE-FIRST REFINEMENTS-> fluid type & polish akhir untuk layar kecil
+
+   KONVENSI PENAMAAN KELAS: BEM-like, mis. `.story__card` (elemen) dan
+   `.story__item--left` (modifier). Prefix ganda garis-bawah (__) = turunan
+   dari blok induk; tanda hubung ganda (--) = varian/state dari blok tsb.
+
+   SUMBER WARNA TUNGGAL (SINGLE SOURCE OF TRUTH):
+   Jangan menulis kode warna hex secara langsung di luar Bagian 1. Selalu
+   gunakan var(--nama-token) agar tema (mis. ganti palet emas → perak) cukup
+   diubah di satu tempat (:root).
    ========================================================================== */
+
+
+
+   /* --------------------------------------------------------------------
+      Design Token = variabel CSS global (custom properties) yang menjadi
+      "kamus" visual seluruh situs. Jika Anda ingin mengganti tema warna
+      (mis. dari nuansa Jawa/emas-cokelat menjadi nuansa Bali/hijau-perak),
+      CUKUP ubah nilai-nilai di blok :root berikut — seluruh komponen di
+      Bagian 5–7 akan otomatis mengikuti karena semuanya mereferensikan
+      token ini, bukan nilai literal.
+      -------------------------------------------------------------------- */
    :root {
-    /* Core surfaces */
+    /* Core surfaces: warna latar gelap utama (terinspirasi warna kain
+       "sogan" batik Jawa). --sogan-deep dipakai sebagai background <body>. */
     --sogan-deep: #1a0f07;
     --sogan-dark: #23140a;
     --sogan-card: #2d1a0d;
     --primary-container: #3b2414;
   
-    /* Gold family */
+    /* Gold family: aksen emas untuk CTA, judul, ikon & border dekoratif.
+       --gold-bright = warna aksen paling menonjol (tombol, angka countdown). */
     --gold-bright: #D4AF37;
     --gold-muted: #C49A45;
     --gold-foil: #E6D19C;
@@ -29,7 +69,11 @@
     --charcoal-ink: #22201E;
     --body-text: #eedfcc;
   
-    /* Typography */
+    /* Typography:
+       --font-display -> font serif elegan untuk judul besar & elemen seremonial.
+       --font-body     -> font sans-serif untuk teks baca (paragraf, label, form).
+       Kedua font dimuat via Google Fonts <link> di index.html <head>. Jika
+       ingin mengganti font, update <link> tsb DAN variabel ini bersamaan. */
     --font-display: 'Playfair Display', serif;
     --font-body: 'Plus Jakarta Sans', sans-serif;
   
@@ -46,7 +90,11 @@
     --fs-label-caps: 11px;
     --fs-label-md: 14px;
     --fs-countdown-num: 32px;
-  
+    /* Semua --fs-* di atas adalah ukuran font DESKTOP/tablet default.
+       Beberapa di antaranya di-override dengan `clamp()` fluid-type pada
+       Bagian 14 (Mobile-First Refinements) khusus untuk layar sangat kecil
+       agar hirarki judul tetap terjaga tanpa patah baris yang aneh. */
+
     /* Radii */
     --radius-sm: 0.25rem;
     --radius-md: 0.75rem;
@@ -54,7 +102,10 @@
     --radius-xl: 1.5rem;
     --radius-full: 9999px;
   
-    /* Spacing */
+    /* Spacing scale: skala jarak konsisten (lihat juga PDF slide
+       "Desain Token Variabel CSS": --space-xs..--space-xxl). Gunakan token
+       ini, bukan angka px acak, untuk margin/padding antar komponen agar
+       ritme visual tetap harmonis di seluruh halaman. */
     --gutter: 1.5rem;
     --gutter-mobile: 1rem;
     --space-xs: 0.25rem;
@@ -69,11 +120,16 @@
     --shadow-glow-gold: 0 10px 30px rgba(212, 175, 55, 0.4);
   
     /* Layout */
-    --content-max: 1140px;
+    --content-max: 1140px; /* lebar maksimum konten pada layar desktop lebar
+                               (>=1280px), lihat Bagian 11 RESPONSIVE */
   }
   
   /* ==========================================================================
      2. RESET / BASE
+     --------------------------------------------------------------------------
+     Normalisasi gaya bawaan browser. `box-sizing: border-box` universal
+     membuat padding & border dihitung DI DALAM lebar elemen (bukan menambah
+     lebar), sehingga perhitungan layout grid/flex jauh lebih mudah diprediksi.
      ========================================================================== */
   *,
   *::before,
@@ -101,11 +157,20 @@
     font-size: var(--fs-body-md);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    /* PENTING — Penguncian Scroll (lihat PDF: "Stabilitas Layar dengan
+       Dynamic Viewport Height" & "Manajemen State JavaScript Cover"):
+       Body dikunci (`overflow-y: hidden`) secara default supaya tamu TIDAK
+       bisa menggulir latar belakang selama overlay <div class="curtain">
+       masih tampil menutupi layar penuh. Kelas `.is-unlocked` di bawah ini
+       ditambahkan oleh script.js (fungsi initOpeningCurtain) tepat setelah
+       animasi pembukaan sampul selesai, yang membuka kembali kemampuan
+       scroll. Jangan hapus pasangan hidden/auto ini tanpa menyesuaikan JS. */
     overflow-y: hidden;
     overflow-x: hidden;
     overflow-wrap: break-word;
   }
   
+  /* Ditambahkan via JS: document.body.classList.add('is-unlocked') */
   body.is-unlocked {
     overflow-y: auto;
   }
@@ -154,6 +219,14 @@
   
   /* ==========================================================================
      3. TYPOGRAPHY
+     --------------------------------------------------------------------------
+     Kelas-kelas utility di bawah ini adalah "skala tipografi" situs: setiap
+     level (display-hero > headline-lg > headline-md > headline-sm >
+     title-script > body-lg/md/sm > label-caps/md) dipakai berulang kali di
+     markup index.html. JANGAN membuat ukuran font ad-hoc baru di komponen
+     lain — pilih salah satu kelas berikut agar hirarki visual tetap
+     konsisten. Mayoritas kelas mobile-first: nilai dasar untuk layar kecil,
+     di-override lewat @media (min-width: 640px) untuk layar lebih besar.
      ========================================================================== */
   .display-hero {
     font-family: var(--font-display);
@@ -257,7 +330,11 @@
     color: var(--gold-bright);
   }
   
-  /* Material Symbols base */
+  /* Material Symbols base: ikon Google (favorite, calendar_today, dll.)
+     dimuat sebagai web font via <link> di <head>. Nama ikon ditulis sebagai
+     teks biasa di dalam <span class="material-symbols-outlined">nama_ikon</span>
+     dan dirender sebagai glyph oleh font ini. Untuk menambah ikon baru,
+     cukup ganti teks nama ikonnya — tidak perlu import tambahan. */
   .material-symbols-outlined {
     font-family: 'Material Symbols Outlined';
     font-weight: normal;
@@ -276,6 +353,16 @@
   
   /* ==========================================================================
      4. GLOBAL LAYOUT
+     --------------------------------------------------------------------------
+     `.site-main` membungkus SELURUH <section> di dalam <main> (lihat
+     index.html). `.section` adalah kelas dasar wajib pada SETIAP <section>:
+     ia memberi padding vertikal fluid (clamp), padding horizontal yang
+     menghormati safe-area notch perangkat (env(safe-area-inset-*)), dan
+     men-stack konten secara vertikal-center.
+
+     UNTUK MENAMBAH SECTION BARU: beri elemen <section class="section nama-anda"
+     id="nama-anda">, lalu tambahkan blok CSS spesifik "nama-anda" di Bagian 7
+     mengikuti pola penamaan yang sudah ada (lihat komentar "--- Nama --- ").
      ========================================================================== */
   .site-main {
     width: 100%;
@@ -286,6 +373,8 @@
   
   .section {
     width: 100%;
+    /* padding atas/bawah: clamp(min, preferred(viewport), max) -> otomatis
+       mengecil di layar pendek & membesar di layar tinggi tanpa media query */
     padding: clamp(3rem, 12vw, 5rem) max(var(--gutter-mobile), env(safe-area-inset-left, 0px)) clamp(3rem, 12vw, 5rem) max(var(--gutter-mobile), env(safe-area-inset-right, 0px));
     display: flex;
     flex-direction: column;
@@ -299,6 +388,11 @@
     }
   }
   
+  /* Zebra-striping otomatis: section ganjil/genap memakai warna latar yang
+     sedikit berbeda (--sogan-deep vs --sogan-dark) agar batas antar-seksi
+     terasa tanpa perlu garis pembatas eksplisit. Jika Anda menyisipkan atau
+     menghapus satu <section>, urutan ganjil/genap ini otomatis menyesuaikan —
+     tidak perlu diubah manual. */
   .section:nth-of-type(odd) { background-color: var(--sogan-deep); }
   .section:nth-of-type(even) { background-color: var(--sogan-dark); }
   
@@ -328,22 +422,49 @@
   }
   
   /* ==========================================================================
-     5. OPENING CURTAIN
+     5. OPENING CURTAIN  (Sampul Pembuka / "Opening Envelope")
+     --------------------------------------------------------------------------
+     Lihat PDF: "Arsitektur Komponen Opening Envelope" & "Stabilitas Layar
+     dengan Dynamic Viewport Height". Blok ini men-style elemen
+     #theatrical-curtain di index.html: overlay full-screen (fixed, z-index
+     tertinggi di halaman = 50) yang menutupi seluruh konten sampai tombol
+     "Buka Undangan" ditekan (logikanya ada di script.js -> initOpeningCurtain).
+
+     CATATAN TEKNIS PENTING:
+     - `@supports (height: 100dvh)` dipakai untuk memastikan tinggi overlay
+       mengikuti "Dynamic Viewport Height", mencegah tombol/teks terpotong
+       oleh address bar browser mobile (terutama iOS Safari) yang muncul/
+       hilang secara dinamis saat discroll.
+     - Transisi opacity 1000ms di sini BEKERJA SAMA dengan dua setTimeout
+       di script.js (500ms lalu 1200ms) untuk menciptakan urutan animasi:
+       1) karakter wayang kiri/kanan bergeser keluar + konten memudar,
+       2) seluruh curtain fade-out,
+       3) curtain disembunyikan dari DOM (display:none) & scroll dibuka.
+       Jika Anda mengubah durasi transisi di sini, SESUAIKAN juga angka
+       setTimeout yang berkorespondensi di script.js agar animasi tetap mulus.
      ========================================================================== */
   .curtain {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
+    position: fixed; /* lepas dari alur dokumen, menempel pada viewport (bukan parent) */
+    inset: 0;        /* shorthand utk top:0; right:0; bottom:0; left:0 -> menutupi SELURUH layar */
+    z-index: 50; /* harus lebih tinggi dari semua elemen lain (toast=50 juga,
+                    audio-controller=40) agar benar-benar menutup layar */
     display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--sogan-deep);
+    align-items: center;    /* pusatkan konten curtain secara vertikal */
+    justify-content: center; /* pusatkan konten curtain secara horizontal */
+    background: var(--sogan-deep); /* latar gelap solid, konsisten dgn body */
     color: var(--jasmine-white);
-    transition: opacity 1000ms ease-in-out;
-    overflow: hidden;
-    /* respect notch / home-indicator */
+    transition: opacity 1000ms ease-in-out; /* DIPICU oleh script.js (dom.curtain.style.opacity='0') pada t=500ms -> lihat initOpeningCurtain() */
+    overflow: hidden; /* sembunyikan bagian wayang/awan yang sengaja digeser keluar batas elemen */
+    /* respect notch / home-indicator: tambahkan padding selebar safe-area
+       perangkat (notch iPhone, dsb.) agar konten tidak tertutup elemen
+       sistem operasi */
     padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   }
+  /* Browser yang mendukung unit dvh (dynamic viewport height, mayoritas
+     browser modern 2023+): paksa tinggi curtain mengikuti viewport
+     DINAMIS (menyusut saat address bar browser mobile muncul), bukan
+     100vh statis yang bisa menyebabkan curtain "lebih tinggi dari layar
+     terlihat" di iOS Safari saat address bar sedang tampil. */
   @supports (height: 100dvh) {
     .curtain { height: 100dvh; bottom: auto; }
   }
@@ -380,13 +501,17 @@
   
   .curtain__wayang {
     position: absolute;
-    bottom: 0;
-    top: 0;
-    width: clamp(6.5rem, 38vw, 9.5rem);
+    bottom: 0; top: 0;             /* rentangkan penuh tinggi curtain */
+    width: clamp(6.5rem, 38vw, 9.5rem); /* fluid width: minimal 6.5rem, maksimal 9.5rem, mengikuti 38% lebar viewport di antaranya -> figur wayang proporsional di HP sempit maupun lebar */
     display: flex;
-    align-items: center;
-    pointer-events: none;
-    z-index: 10;
+    align-items: center;           /* figur wayang vertically centered */
+    pointer-events: none;          /* dekoratif saja, tidak boleh "mencuri" klik dari tombol di belakangnya */
+    z-index: 10;                   /* di atas atmosphere (awan/pendopo) tapi di bawah curtain__content (z-index 20) */
+    /* transisi INILAH yang dipakai script.js saat tombol diklik: JS hanya
+       mengubah `transform` & `opacity` secara inline, transisi HALUS 1600ms
+       dengan easing cubic-bezier custom ini yang membuatnya "meluncur
+       keluar" alih-alih melompat instan. SESUAIKAN durasi 1600ms ini jika
+       timeline animasi di script.js (500ms/1200ms) diubah. */
     transition: transform 1600ms cubic-bezier(0.16, 1, 0.3, 1), opacity 1600ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   .curtain__wayang img {
@@ -479,24 +604,31 @@
   
   /* ==========================================================================
      6. BUTTONS & SHARED COMPONENTS
+     --------------------------------------------------------------------------
+     Komponen yang dipakai berulang di banyak section: tombol (.btn dan 3
+     variannya), pill tanggal (.date-pill), kontrol musik mengambang
+     (.audio-controller, lihat script.js -> initAudioController), dan
+     notifikasi toast (.toast, lihat script.js -> showToast()).
      ========================================================================== */
   .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
+    display: inline-flex;       /* flex tapi tidak full-width, mengikuti ukuran konten (ikon+teks) */
+    align-items: center;        /* sejajarkan ikon & teks label secara vertikal */
+    gap: 0.5rem;                 /* jarak antara ikon material-symbols & teks */
     border: none;
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-full); /* bentuk pill/kapsul penuh */
     font-family: var(--font-body);
     font-size: var(--fs-label-md);
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
+    text-transform: uppercase;   /* semua tombol tampil HURUF BESAR secara visual (teks asli di HTML tetap normal, CSS yg mengubah tampilannya) */
+    letter-spacing: 0.15em;      /* jarak antar huruf lebar -> kesan elegan/formal khas undangan */
     padding: 0.9rem 2rem;
-    transition: transform 250ms, box-shadow 250ms;
+    transition: transform 250ms, box-shadow 250ms; /* basis utk efek :hover/:active di bawah */
   }
-  .btn:hover { transform: scale(1.05); }
-  .btn:active { transform: scale(0.95); }
+  .btn:hover { transform: scale(1.05); }  /* membesar sedikit saat kursor di atas (feedback interaktif) */
+  .btn:active { transform: scale(0.95); } /* mengecil sedikit saat DIKLIK/ditekan (micro-interaction "tombol ditekan") */
   
+  /* Varian 1: tombol aksi utama (CTA) — gradien emas, dipakai pada
+     "Buka Undangan" & "Simpan ke Kalender" */
   .btn--gold {
     background: linear-gradient(to right, var(--gold-muted), var(--gold-bright), var(--gold-muted));
     color: var(--sogan-deep);
@@ -541,7 +673,14 @@
     margin-top: 0.5rem;
   }
   
-  /* Floating Audio Controller */
+  /* Floating Audio Controller — tombol mengambang di pojok kanan bawah
+     untuk memutar/menghentikan musik gamelan latar (elemen <audio> saat ini
+     DI-COMMENT di index.html; aktifkan dengan menyediakan file
+     assets/audio/Kebo Giro.mp3 dan membuka komentar tag <audio>).
+     Disk (.audio-controller__disc) berputar lewat @keyframes spin-slow
+     HANYA saat aria-pressed="true" (lihat aturan di bawah & script.js
+     -> updateAudioButtonState). z-index 40 < curtain(50)/toast(50) agar
+     tidak menutupi overlay pembuka atau notifikasi. */
   .audio-controller {
     position: fixed;
     bottom: 1.5rem;
@@ -591,7 +730,9 @@
   }
   @media (min-width: 640px) { .audio-controller__text { display: flex; } }
   
-  /* Toast Notification */
+  /* Toast Notification — notifikasi singkat (mis. "Nomor rekening berhasil
+     disalin!"). Default `display:none`; kelas `.is-visible` ditambahkan oleh
+     script.js -> showToast() dan dihapus otomatis via setTimeout 3 detik. */
   .toast {
     position: fixed;
     top: 2rem;
@@ -613,9 +754,43 @@
   
   /* ==========================================================================
      7. WEDDING SECTIONS
+     --------------------------------------------------------------------------
+     Bagian TERBESAR dan PALING SERING DIUBAH dari file ini. Setiap
+     sub-bagian "--- Nama ---" berikut berkorespondensi SATU-KE-SATU dengan
+     satu <section id="nama"> di index.html (urutan sub-bagian CSS di bawah
+     sengaja mengikuti urutan section di markup, dari atas ke bawah halaman):
+
+       Hero            -> #hero            (sampul utama setelah curtain dibuka)
+       Intro / Doa     -> #intro-doa       (kartu QS. Ar-Rum:21)
+       Couple          -> #couple          (profil kedua mempelai)
+       Quote           -> #quote           (filosofi Jawa — saat ini di-comment)
+       Countdown       -> #countdown       (hitung mundur real-time)
+       Events          -> #events          (susunan acara akad & resepsi)
+       Location        -> #location        (peta & tata tertib tamu)
+       Streaming       -> #streaming       (live streaming — saat ini di-comment)
+       Story/Timeline  -> #story           (linimasa kisah cinta, lihat PDF
+                                             "Struktur Semantik Timeline Love
+                                             Story" & "Tata Letak Timeline
+                                             Seluler/Desktop")
+       Gallery         -> #gallery         (galeri foto — saat ini di-comment)
+       Lightbox        -> modal galeri (dipasang sebagai child <main>, bukan section)
+       Video           -> #video           (teaser video — saat ini di-comment)
+       Gift            -> #gift            (nomor rekening — saat ini di-comment)
+       RSVP Form       -> #rsvp            (form konfirmasi — saat ini di-comment)
+       Wishes          -> #wishes          (buku tamu — saat ini di-comment)
+       Closing         -> #closing         (<footer> penutup)
+
+     CATATAN: beberapa section di index.html saat ini dibungkus komentar HTML
+     (dinonaktifkan sementara oleh tim/mentor magang) tetapi CSS-nya tetap
+     dipertahankan di bawah agar siap dipakai kembali begitu markup-nya
+     diaktifkan ulang. Jangan menghapus blok CSS yang section HTML-nya masih
+     di-comment — itu disengaja untuk pengembangan berikutnya.
      ========================================================================== */
   
-  /* --- Hero --- */
+  /* --- Hero ---
+     Section pembuka setelah curtain hilang: nama mempelai + tanggal acara.
+     min-height:100vh (lihat juga override 100dvh di bawah jika ada) membuat
+     hero selalu memenuhi satu layar penuh sebagai "first impression". */
   .hero {
     min-height: 100vh;
     justify-content: center;
@@ -757,7 +932,10 @@
     opacity: 0.6;
   }
   
-  /* --- Couple --- */
+  /* --- Couple ---
+     Grid 2 kartu profil mempelai (.couple-card) dipisah oleh simbol "&"
+     (.couple__connector). Di layar sempit kartu akan stack vertikal — lihat
+     penyesuaian di Bagian 14 (komentar "Couple: keep the '&' on mobile..."). */
   .couple__grid {
     max-width: 72rem;
     width: 100%;
@@ -839,7 +1017,9 @@
   .couple__connector-flip { transform: scaleY(-1); }
   .couple__connector span { font-size: 2.25rem; margin: 0.5rem 0; }
   
-  /* --- Quote --- */
+  /* --- Quote (saat ini TIDAK AKTIF — markup-nya di-comment di index.html) ---
+     Menampilkan filosofi/pepatah Jawa sebagai kutipan besar bergaya italic.
+     Styling tetap dipertahankan agar dapat langsung dipakai ulang. */
   .quote { text-align: center; }
   .quote__content { max-width: 48rem; }
   .quote__eyebrow { display: block; margin-bottom: 0.75rem; }
@@ -858,51 +1038,71 @@
     margin: 0 auto;
   }
   
-  /* --- Countdown --- */
-  .countdown { text-align: center; position: relative; overflow: hidden; }
+  /* --- Countdown ---
+     Lihat PDF: "Kalkulasi Waktu", "Konversi Milidetik ke Unit Diskrit",
+     "Aksesibilitas DOM pada Countdown Timer", "Stabilitas Antarmuka Timer
+     (Zero CLS)". Styling di sini HARUS selaras dengan logika JS di
+     script.js (fungsi updateCountdown, showCountdownTimer/Message):
+     - `.countdown__grid` adalah container 4 kotak (Hari/Jam/Menit/Detik)
+       dengan role="timer" aria-live="polite" di markup.
+     - `.countdown-num` memakai font-variant-numeric: tabular-nums (lihat
+       definisi di Bagian 3 Typography) + lebar kotak tetap agar pergantian
+       angka tiap detik TIDAK memicu Cumulative Layout Shift (CLS=0).
+     - `#countdown-message` (fase "doa"/"thanks") disembunyikan via inline
+       style="display:none" dan di-toggle oleh showCountdownTimer()/
+       showCountdownMessage() di JS — jangan mengubah mekanisme show/hide
+       ini di CSS tanpa menyesuaikan JS, karena JS menulis langsung ke
+       elemen.style.display. */
+  .countdown { text-align: center; position: relative; overflow: hidden; } /* overflow:hidden membungkus 2 gambar dekoratif .countdown__bg agar tidak bocor keluar section */
   .countdown__bg {
-    position: absolute;
+    position: absolute; /* dekorasi latar, lepas dari alur normal */
     inset: 0;
-    opacity: 0.1;
+    opacity: 0.1;        /* sangat transparan -> hanya aksen tekstur halus, tidak mengganggu keterbacaan angka */
     display: flex;
     align-items: center;
-    justify-content: space-around;
-    pointer-events: none;
+    justify-content: space-around; /* 2 gambar frame tersebar kiri-kanan */
+    pointer-events: none; /* murni dekoratif, tidak boleh menghalangi klik/scroll */
   }
   .countdown__bg img { height: 100%; object-fit: contain; }
-  .countdown__bg--flip { transform: scaleX(-1); }
+  .countdown__bg--flip { transform: scaleX(-1); } /* cerminkan gambar kedua secara horizontal agar simetris dgn yg pertama (hemat 1 aset gambar) */
   
   .countdown__content {
-    position: relative;
+    position: relative; /* perlu agar z-index berlaku & konten berada DI ATAS .countdown__bg */
     z-index: 10;
     max-width: 56rem;
     width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: center; /* semua children center secara horizontal (judul, grid angka, dsb.) */
   }
   .countdown__eyebrow { margin-bottom: 0.5rem; }
   .countdown__title { margin-bottom: 1rem; }
   .countdown__lead {
-    color: rgba(238, 223, 204, 0.8);
-    max-width: 28rem;
+    color: rgba(238, 223, 204, 0.8); /* --body-text dengan sedikit transparansi -> hierarki visual lebih rendah dari judul */
+    max-width: 28rem;                 /* batasi lebar baris teks agar tetap nyaman dibaca (tidak melebar penuh di layar besar) */
     margin-bottom: 2.5rem;
   }
   
+  /* .countdown__grid = KONTAINER untuk 4 kotak angka DAN untuk elemen
+     #countdown-message (teks doa/terima kasih) secara BERGANTIAN — lihat
+     markup index.html: keduanya anak dari section yang sama, tapi JS
+     men-toggle display salah satunya via showCountdownTimer()/
+     showCountdownMessage(). Grid di bawah ini KHUSUS styling saat MODE
+     ANGKA aktif. */
   .countdown__grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr); /* MOBILE: 2 kolom -> tersusun 2x2 (Hari,Jam / Menit,Detik) agar kotak tidak terlalu kecil di layar sempit */
     gap: 1rem;
     width: 100%;
     max-width: 40rem;
     margin-bottom: 2.5rem;
   }
   @media (min-width: 640px) {
-    .countdown__grid { grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+    .countdown__grid { grid-template-columns: repeat(4, 1fr); gap: 1.5rem; } /* DESKTOP/TABLET: 4 kolom sejajar -> Hari Jam Menit Detik berjajar satu baris */
   }
   
   .countdown-badge {
-    position: relative;
+    position: relative; /* anchor untuk .countdown-badge__icon absolute di bawah */
     background: var(--sogan-card);
     border: 1px solid rgba(212, 175, 55, 0.4);
     border-radius: var(--radius-lg);
@@ -912,17 +1112,23 @@
     align-items: center;
     justify-content: center;
     box-shadow: var(--shadow-standard);
+    /* CATATAN ZERO-CLS: kotak ini TIDAK diberi width/min-width tetap
+       secara eksplisit di sini karena grid induk (grid-template-columns)
+       sudah membagi ruang secara merata & konsisten setiap render —
+       kombinasi grid + font-variant-numeric:tabular-nums pada
+       .countdown-num (lihat Bagian 3 TYPOGRAPHY) sudah cukup untuk
+       mencegah pergeseran lebar kotak saat angka berganti tiap detik
+       (mis. dari "9" ke "10" hari). */
   }
   .countdown-badge__icon {
     position: absolute;
-    top: 0.25rem;
-    left: 0.25rem;
+    top: 0.25rem; left: 0.25rem; /* tempel di pojok kiri-atas kotak, sebagai motif dekoratif bunga melati kecil */
     width: 1.5rem;
     opacity: 0.6;
     pointer-events: none;
   }
-  .countdown-badge .countdown-num { margin-top: 0.25rem; }
-  .countdown-badge .label-caps { margin-top: 0.25rem; }
+  .countdown-badge .countdown-num { margin-top: 0.25rem; } /* elemen #timer-days/hours/minutes/seconds dari script.js dirender di sini */
+  .countdown-badge .label-caps { margin-top: 0.25rem; }    /* label "Hari"/"Jam"/"Menit"/"Detik" statis di bawah angka */
   
   /* --- Events --- */
   .events__grid {
@@ -1153,38 +1359,71 @@
   .streaming__icon .material-symbols-outlined { font-size: 32px; animation: pulse 2s infinite; }
   .streaming__info p { margin-top: 0.25rem; color: rgba(238, 223, 204, 0.8); }
   
-  /* --- Story / Timeline --- */
+  /* --- Story / Timeline ---
+     Lihat PDF slide "Struktur Semantik Timeline Love Story" (ordered list >
+     list item > article container > time wrapper) dan "Tata Letak Timeline
+     Seluler (Single-Column)" / "Tata Letak Timeline Desktop (Alternating
+     Two-Column)". Struktur HTML: <ol class="story__timeline"> berisi <li
+     class="story__item story__item--left|--right">, masing-masing memuat
+     <article class="story__card"> + <span class="story__node"> (titik ikon
+     pada garis sumbu).
+
+     - MOBILE (default): satu kolom, garis sumbu vertikal via ::before di
+       sisi kiri, semua kartu rata kiri terlepas dari modifier left/right.
+     - DESKTOP (>=768px, lihat media query turunannya di bawah blok ini):
+       layout berubah "alternating two-column" — item dengan class
+       `--right` ditempatkan di SEBELAH KIRI garis sumbu teks rata kanan,
+       dan item `--left` di SEBELAH KANAN garis sumbu teks rata kiri
+       (penamaan class mengacu pada KONTEN, mengikuti urutan ganjil/genap
+       pada PDF, bukan posisi visualnya — periksa aturan nth-child/left-right
+       di bawah bila ingin membalik urutan).
+     - UNTUK MENAMBAH MOMEN BARU: duplikasi satu <li class="story__item
+       story__item--left"> atau `--right` berikutnya di index.html (ikuti
+       pola selang-seling), lengkap dengan <time datetime="YYYY-MM"> untuk
+       keterbacaan mesin, judul <h4>, foto <figure class="story__photo">
+       (lihat sub-bagian "Photo Slot" di bawah untuk fallback ikon jika
+       gambar belum tersedia), dan deskripsi <p>. Tidak perlu mengubah CSS
+       apa pun — seluruh style sudah generik berbasis class, bukan nth-child
+       index tetap. */
   .story__timeline {
     max-width: 56rem;
     width: 100%;
-    position: relative;
+    position: relative; /* anchor untuk ::before (garis sumbu) & .story__node (titik) yang absolute */
     display: flex;
-    flex-direction: column;
-    gap: 3rem;
-    padding-left: 3.5rem;
+    flex-direction: column; /* MOBILE: susun <li> vertikal berurutan (single-column) */
+    gap: 3rem;               /* jarak antar momen */
+    padding-left: 3.5rem;    /* MOBILE: beri ruang di kiri untuk garis sumbu + titik node, supaya kartu tidak menimpanya */
   }
+  /* Garis sumbu vertikal (timeline connector line), dibuat dari pseudo-
+     element ::before (bukan elemen <div> terpisah) agar tidak menambah
+     markup HTML tambahan — murni dekorasi. */
   .story__timeline::before {
     content: '';
     position: absolute;
     top: 0;
-    bottom: 0;
-    left: 1.5rem;
+    bottom: 0;          /* top:0 + bottom:0 -> garis merentang penuh dari momen pertama sampai terakhir */
+    left: 1.5rem;        /* MOBILE: garis ditempatkan di SISI KIRI container (1.5rem dari tepi) */
     width: 2px;
-    background: rgba(212, 175, 55, 0.3);
+    background: rgba(212, 175, 55, 0.3); /* emas transparan -> garis halus, tidak terlalu mencolok */
   }
   @media (min-width: 768px) {
-    .story__timeline { padding-left: 0; }
-    .story__timeline::before { left: 50%; transform: translateX(-50%); }
+    .story__timeline { padding-left: 0; } /* DESKTOP: padding kiri khusus mobile tidak diperlukan lagi karena layout berubah 2-kolom simetris */
+    .story__timeline::before { left: 50%; transform: translateX(-50%); } /* DESKTOP: garis dipindah & dipusatkan TEPAT DI TENGAH container (left:50% + translateX(-50%) = teknik centering absolute yang presisi terlepas dari lebar garis) */
   }
   
   .story__item {
-    position: relative;
+    position: relative; /* anchor bagi .story__node (titik ikon) milik item ini */
     display: flex;
-    align-items: center;
+    align-items: center; /* kartu & titik node sejajar vertikal di tengah tiap item */
   }
+  /* DESKTOP SAJA: tentukan di sisi mana (kiri/kanan garis sumbu) kartu
+     akan ditempatkan, berdasarkan modifier class --right/--left yang
+     dipasang manual di HTML secara selang-seling. justify-content pada
+     flex container inilah yang MENDORONG .story__card (lebar 50%-3rem,
+     lihat di bawah) ke salah satu sisi. */
   @media (min-width: 768px) {
-    .story__item--right { justify-content: flex-start; }
-    .story__item--left { justify-content: flex-end; }
+    .story__item--right { justify-content: flex-start; } /* dorong kartu ke KIRI garis (mulai dari flex-start container) */
+    .story__item--left { justify-content: flex-end; }    /* dorong kartu ke KANAN garis (nempel ke flex-end container) */
   }
   .story__card {
     background: var(--sogan-card);
@@ -1192,37 +1431,46 @@
     border-radius: var(--radius-lg);
     padding: 1.5rem;
     box-shadow: var(--shadow-standard);
-    width: 100%;
+    width: 100%; /* MOBILE: kartu memenuhi lebar penuh container (minus padding-left dari .story__timeline) */
   }
   @media (min-width: 768px) {
+    /* DESKTOP: kartu hanya mengisi SETENGAH lebar container dikurangi
+       3rem jarak aman ke garis sumbu di tengah -> inilah yang
+       menciptakan tampilan "alternating two-column" bersama aturan
+       justify-content di atas. */
     .story__card { width: calc(50% - 3rem); }
   }
-  .story__card .label-caps { display: block; margin-bottom: 0.25rem; }
-  .story__card h4 { margin-top: 0.25rem; margin-bottom: 0.5rem; }
-  .story__card p { color: rgba(238, 223, 204, 0.8); }
+  .story__card .label-caps { display: block; margin-bottom: 0.25rem; } /* elemen <time> datetime (lihat index.html) ditata sebagai label kecil emas */
+  .story__card h4 { margin-top: 0.25rem; margin-bottom: 0.5rem; }       /* judul momen (mis. "Pertemuan Pertama") */
+  .story__card p { color: rgba(238, 223, 204, 0.8); }                    /* deskripsi narasi, sedikit lebih redup dari judul */
   
+  /* Titik/ikon bulat pada garis sumbu (mis. ikon favorite/handshake/
+     ring_volume/church sesuai momen) — lihat <span class="story__node"> di index.html. */
   .story__node {
     position: absolute;
-    left: 1.5rem;
+    left: 1.5rem;                      /* MOBILE: sejajar persis dengan posisi garis sumbu (lihat .story__timeline::before left:1.5rem) */
     top: 50%;
-    transform: translate(-50%, -50%);
-    width: 2rem;
-    height: 2rem;
-    border-radius: var(--radius-full);
+    transform: translate(-50%, -50%);  /* pusatkan titik TEPAT di atas garis (baik horizontal maupun vertikal relatif terhadap posisi left/top) */
+    width: 2rem; height: 2rem;
+    border-radius: var(--radius-full); /* bentuk lingkaran sempurna */
     background: var(--gold-bright);
     color: var(--sogan-deep);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid var(--sogan-deep);
+    display: flex; align-items: center; justify-content: center; /* pusatkan ikon material-symbols di dalam lingkaran */
+    border: 2px solid var(--sogan-deep); /* border warna gelap -> menciptakan efek "lubang"/jarak visual terhadap garis sumbu emas transparan di belakangnya */
     box-shadow: var(--shadow-standard);
-    z-index: 2;
+    z-index: 2; /* di atas garis sumbu (::before, tanpa z-index eksplisit = auto/0) dan di atas kartu */
   }
   @media (min-width: 768px) {
-    .story__node { left: 50%; }
+    .story__node { left: 50%; } /* DESKTOP: ikut berpindah ke tengah mengikuti posisi garis sumbu yang baru */
   }
   
-  /* --- Story / Timeline: Photo Slot --- */
+  /* --- Story / Timeline: Photo Slot ---
+     Setiap foto momen memakai pola "fallback ikon": <img onerror="this.remove()">
+     akan menghapus dirinya sendiri dari DOM jika file gambar gagal dimuat,
+     sehingga <span class="story__photo-placeholder"> (ikon kamera
+     add_a_photo) di baliknya otomatis terlihat. Ini mencegah ikon "gambar
+     rusak" bawaan browser tampil di undangan. Taruh file foto asli di
+     assets/images/story-pertemuan-N.png untuk menggantikan placeholder. */
   .story__photo {
     position: relative;
     width: 100%;
@@ -1270,7 +1518,12 @@
     .story__photo { aspect-ratio: 16 / 10; }
   }
   
-  /* --- Gallery --- */
+  /* --- Gallery (saat ini TIDAK AKTIF — markup di-comment) ---
+     Grid foto dengan satu item besar (.gallery__item--large) + beberapa
+     item kecil. Setiap tombol galeri memakai atribut
+     data-lightbox-src="URL_FOTO_FULL" yang dibaca oleh script.js ->
+     initGallery()/openLightbox() untuk menampilkan foto penuh di modal
+     lightbox (lihat sub-bagian Lightbox berikutnya). */
   .gallery__grid {
     max-width: 72rem;
     width: 100%;
@@ -1323,7 +1576,12 @@
   .gallery__item:hover .gallery__caption,
   .gallery__item:focus-visible .gallery__caption { opacity: 1; }
   
-  /* --- Lightbox --- */
+  /* --- Lightbox ---
+     Modal overlay (#gallery-lightbox) untuk menampilkan 1 foto galeri
+     ukuran penuh. Kelas `.is-open` ditambahkan/dihapus oleh script.js
+     (openLightbox/closeLightbox). Modal ditutup lewat: tombol close,
+     klik area luar gambar, atau tombol Escape (lihat event listener
+     keydown di script.js -> initGallery()). */
   .lightbox {
     position: fixed;
     inset: 0;
@@ -1440,7 +1698,11 @@
   .video-player.is-playing .video-player__play,
   .video-player.is-playing .video-player__meta { display: none; }
   
-  /* --- Gift / Bank cards --- */
+  /* --- Gift / Bank cards (saat ini TIDAK AKTIF — markup di-comment) ---
+     Kartu rekening bank (.bank-card) + kartu alamat pengiriman kado fisik
+     (.address-card). Tombol salin memakai atribut data-copy-value &
+     data-copy-message yang dibaca oleh script.js -> initCopyButtons() /
+     copyToClipboard() (dengan fallback execCommand untuk browser lama). */
   .gift__grid {
     max-width: 56rem;
     width: 100%;
@@ -1511,7 +1773,16 @@
   .address-card__info .body-sm { color: rgba(238, 223, 204, 0.8); }
   .address-card .btn { white-space: nowrap; width: auto; }
   
-  /* --- RSVP Form --- */
+  /* --- RSVP Form (saat ini TIDAK AKTIF — markup di-comment) ---
+     Form konfirmasi kehadiran (#rsvp-form): nama, pilihan hadir/ragu/tidak
+     (.attendance-toggle, radio button custom-styled), jumlah tamu (select),
+     dan ucapan (textarea). Submit ditangani oleh script.js ->
+     handleRsvpSubmit() yang MENCEGAH reload halaman (preventDefault),
+     memvalidasi nama wajib diisi, lalu memanggil addWishCard() untuk
+     menambahkan entri baru ke buku tamu (#wishes-container) — TANPA
+     mengirim data ke server manapun (murni client-side / in-memory,
+     akan hilang saat halaman di-refresh). Untuk persistensi sungguhan,
+     sambungkan handleRsvpSubmit() ke backend/Google Sheets/Firebase, dll. */
   .rsvp-form {
     max-width: 42rem;
     width: 100%;
@@ -1591,7 +1862,13 @@
     margin-top: 0.5rem;
   }
   
-  /* --- Wishes / Guestbook --- */
+  /* --- Wishes / Guestbook (saat ini TIDAK AKTIF — markup di-comment) ---
+     Daftar ucapan tamu (.wish-card). Entri baru dari form RSVP disisipkan
+     di PALING ATAS (prepend) oleh script.js -> addWishCard(), lengkap
+     dengan animasi fade+scale-in (lihat inline style di JS yang
+     memanfaatkan requestAnimationFrame untuk trigger transisi CSS). Avatar
+     inisial (.wish-card__avatar) dihasilkan dari 2 huruf pertama nama tamu
+     via getInitials(). */
   .wishes__list {
     max-width: 48rem;
     width: 100%;
@@ -1749,6 +2026,35 @@
   
   /* ==========================================================================
      10. ANIMATIONS
+     --------------------------------------------------------------------------
+     @keyframes di bawah dipakai oleh komponen-komponen spesifik (disk audio
+     controller, dsb). Sub-bagian KEDUA yang lebih penting di sini adalah
+     "Global Scroll-Reveal System" (.reveal-item) — mekanisme animasi
+     "muncul saat discroll" yang dipakai HAMPIR DI SETIAP elemen konten
+     di seluruh halaman (lihat index.html: class "reveal-item delay-N").
+
+     CARA KERJA SCROLL-REVEAL (CSS + JS bekerja sama):
+     1) CSS: elemen `.reveal-item` default tak terlihat (opacity:0,
+        translateY+scale sedikit mengecil) — lihat aturan di bawah.
+     2) JS (script.js -> initScrollReveal): memasang IntersectionObserver
+        pada SEMUA elemen `.reveal-item`. Saat sebuah elemen memasuki
+        viewport (threshold 15%), JS menambahkan kelas `.is-revealed` lalu
+        BERHENTI mengamati elemen itu (animasi hanya terjadi sekali).
+     3) CSS: aturan `.reveal-item.is-revealed` mengembalikan opacity:1 dan
+        transform ke posisi normal, dengan transisi cubic-bezier yang halus.
+     4) Kelas `.delay-0/100/200/300/400` menambahkan transition-delay
+        bertingkat agar elemen-elemen dalam satu section muncul berurutan
+        (efek "staggered reveal"), bukan serentak.
+     5) Jika JavaScript gagal/nonaktif, ada <noscript> di index.html (lihat
+        section #story) yang memaksa opacity:1 !important agar konten tetap
+        terbaca — pola serupa sebaiknya diterapkan di section lain juga.
+     6) initScrollReveal() baru dipanggil SETELAH curtain terbuka (lihat
+        Bagian 5 OPENING CURTAIN) — supaya elemen di belakang curtain tidak
+        mulai teranimasi sebelum tamu benar-benar membuka undangan.
+
+     UNTUK MENAMBAH ELEMEN BARU YANG IKUT TERANIMASI: cukup tambahkan class
+     `reveal-item` (dan opsional `reveal-photo` untuk variant foto, serta
+     `delay-N` untuk jeda) ke elemen HTML tsb — tidak perlu kode JS tambahan.
      ========================================================================== */
   @keyframes spin-slow {
     from { transform: rotate(0deg); }
@@ -1767,20 +2073,36 @@
   
   /* Global Scroll-Reveal System */
   .reveal-item {
-    opacity: 0;
-    transform: translateY(28px) scale(0.99);
+    opacity: 0;                              /* STATE AWAL: tak terlihat sama sekali sebelum diamati JS */
+    transform: translateY(28px) scale(0.99); /* mulai sedikit di BAWAH posisi akhir (28px) & sedikit mengecil (99%) -> memberi kesan elemen "naik & membesar" saat muncul */
+    /* transition INI yang dipakai saat class is-revealed ditambahkan oleh
+       JS — 1100ms dengan easing cubic-bezier "ease-out" kuat (nilai 0.16,
+       1, 0.3, 1 = gerakan cepat di awal, melambat halus di akhir). */
     transition: opacity 1100ms cubic-bezier(0.16, 1, 0.3, 1), transform 1100ms cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: opacity, transform;
+    will-change: opacity, transform; /* beri HINT ke browser utk optimasi rendering (compositing layer terpisah) karena properti ini PASTI akan berubah */
   }
+  /* Varian untuk elemen FOTO (ditambahkan sebagai class kedua, mis.
+     class="reveal-item reveal-photo delay-200"): jarak geser & durasi
+     sedikit berbeda dari varian teks biasa agar foto terasa lebih
+     "mengambang masuk" ketimbang "naik dari bawah". */
   .reveal-item.reveal-photo {
-    transform: translateY(20px) scale(0.98);
-    transition: opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1), transform 1200ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(20px) scale(0.98); /* jarak lebih pendek (20px vs 28px) & scale lebih halus (98% vs 99%) */
+    transition: opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1), transform 1200ms cubic-bezier(0.16, 1, 0.3, 1); /* sedikit lebih lama (1200ms vs 1100ms) */
   }
+  /* STATE AKHIR: class ini ditambahkan oleh script.js -> initScrollReveal()
+     SAAT elemen terdeteksi masuk viewport. Karena hanya mengubah
+     opacity/transform (bukan properti lain), transisi di atas otomatis
+     "mengantar" dari state awal ke state ini secara halus. */
   .reveal-item.is-revealed {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0) scale(1); /* kembali ke posisi & ukuran normal/asli */
   }
   
+  /* Kelas delay-N TIDAK mengubah DURASI transisi, melainkan KAPAN transisi
+     itu MULAI dijalankan setelah class is-revealed ditambahkan (transition-
+     delay). Dipasang berjenjang (0, 120, 240, 360, 480ms) pada
+     elemen-elemen berurutan dalam satu section agar muncul "beriringan"
+     (staggered), bukan serentak dalam satu waktu. */
   .delay-0 { transition-delay: 0ms; }
   .delay-100 { transition-delay: 120ms; }
   .delay-200 { transition-delay: 240ms; }
@@ -1789,6 +2111,14 @@
   
   /* ==========================================================================
      11. RESPONSIVE — fine tuning across breakpoints
+     --------------------------------------------------------------------------
+     Catatan: breakpoint UTAMA situs ini (768px = tablet, 1024px/1280px =
+     desktop) sebagian besar sudah didefinisikan INLINE di dalam masing-
+     masing komponen pada Bagian 3–7 (mobile-first: aturan dasar untuk HP,
+     lalu @media (min-width: ...) untuk layar lebih besar). Bagian 11 ini
+     khusus untuk penyesuaian lintas-komponen tambahan yang tidak terikat
+     pada satu komponen tunggal, misalnya lebar maksimum konten di layar
+     sangat lebar (>=1280px, var(--content-max)).
      ========================================================================== */
   @media (max-width: 359px) {
     .section { padding-left: 0.75rem; padding-right: 0.75rem; }
@@ -1809,6 +2139,18 @@
   
   /* ==========================================================================
      12. ACCESSIBILITY
+     --------------------------------------------------------------------------
+     - `:focus-visible` memastikan outline fokus emas HANYA muncul saat
+       navigasi keyboard (Tab), bukan saat klik mouse — menjaga estetika
+       tanpa mengorbankan aksesibilitas keyboard.
+     - Aturan target sentuh minimum 44px (.btn, .social-chip, dst.) mengikuti
+       rekomendasi WCAG 2.5.5 (Target Size) agar tombol mudah ditekan di
+       layar sentuh kecil.
+     - Lihat juga PDF slide "Aksesibilitas Semantik pada Cover Overlay"
+       (role="dialog", aria-modal, aria-label, aria-haspopup) dan
+       "Aksesibilitas DOM pada Countdown Timer" (aria-live="polite") —
+       atribut-atribut ARIA tsb didefinisikan di index.html, bukan di sini,
+       tapi styling-nya (focus ring, dsb.) ada di bagian ini.
      ========================================================================== */
   a:focus-visible,
   button:focus-visible,
@@ -1833,6 +2175,13 @@
   
   /* ==========================================================================
      13. REDUCED MOTION
+     --------------------------------------------------------------------------
+     Menghormati preferensi sistem operasi pengguna "Reduce Motion"
+     (Settings > Accessibility). Saat aktif: seluruh animasi .reveal-item
+     langsung ditampilkan penuh tanpa transisi, animasi putar/pulse
+     dihentikan, dan SEMUA transisi/animasi lain di halaman dipercepat
+     menjadi nyaris instan (0.01ms) via selector universal `*`. Ini penting
+     untuk pengguna yang rentan motion sickness/vertigo akibat animasi.
      ========================================================================== */
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
@@ -1857,8 +2206,29 @@
   
   /* ==========================================================================
      14. MOBILE-FIRST REFINEMENTS
-     Base rules above target phones; these polish spacing, fluid type, touch
-     targets, safe-areas and short/landscape screens without touching the look.
+     --------------------------------------------------------------------------
+     Base rules di atas (Bagian 1-13) SUDAH mobile-first secara umum, tapi
+     bagian ini adalah lapisan "polish" tambahan yang ditulis belakangan
+     khusus untuk kasus-kasus tepi (edge case) pada perangkat nyata:
+       - Font fluid tambahan via clamp() pada layar <640px agar judul besar
+         tidak terasa terlalu besar di HP kecil (lihat juga Bagian 1 catatan
+         --fs-*).
+       - Tombol tidak boleh overflow & tidak ada efek :hover "nempel" di
+         perangkat sentuh (karena :hover disimulasikan buruk di touchscreen).
+       - Elemen fixed (audio controller, toast) menghormati notch/home-
+         indicator via env(safe-area-inset-*).
+       - Penyesuaian per-komponen (Hero, Couple, Events, dst.) untuk spacing
+         yang lebih rapat di layar kecil.
+       - Penanganan khusus layar pendek/landscape (mis. HP direbahkan) agar
+         curtain pembuka tetap bisa discroll jika kontennya tidak muat.
+       - Penanganan HP sangat kecil (<=359px, mis. iPhone SE generasi lama).
+
+     PRIORITAS CASCADE: karena bagian ini berada PALING BAWAH file dan
+     banyak selector-nya sama persis dengan yang di atas, aturan di sini
+     akan MENIMPA (override) aturan sejenis di atas pada breakpoint yang
+     sama (spesifisitas selector setara, urutan source menentukan). Jika
+     sebuah gaya mobile tidak sesuai harapan, PERIKSA DI SINI DULU sebelum
+     mengubah Bagian 1-7, karena kemungkinan besar override-nya ada di sini.
      ========================================================================== */
   
   /* --- Fluid type on very small phones (keeps hierarchy, avoids awkward wraps) --- */
