@@ -104,10 +104,10 @@
     // NONAKTIF: uncomment bersamaan dengan section #streaming / #gift di HTML.
     // Di luar cakupan modul Minggu 6 (Galeri & Video), jadi tetap nonaktif.
     // gift.banks[].account harus sama dengan data-copy-value di tombol salin.
-    /*streaming: {
+    streaming: {
       url: 'https://youtube.com',
     },
-    gift: {
+    /*gift: {
       banks: [
         { bank: 'BANK BCA', account: '8830529144', display: '8830 5291 44', holder: 'Arya Wicaksana' },
         { bank: 'BANK MANDIRI', account: '1380094827110', display: '138 00 9482711 0', holder: 'Sekar Arum' },
