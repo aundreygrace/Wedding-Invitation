@@ -1,82 +1,76 @@
 
 /* ==========================================================================
-   PANDUAN UNTUK DEVELOPER (FILE-LEVEL OVERVIEW)
+   STYLE.CSS — Undangan Pernikahan Digital "Royal Javanese Elegance"
    ==========================================================================
-   Arsitektur stylesheet ini dibagi menjadi 14 bagian bernomor (lihat judul
-   "N. NAMA-BAGIAN" di seluruh file). Urutan ini SENGAJA mengikuti prinsip
-   ITCSS/Cascade-aware: token global → reset → tipografi → layout → komponen
-   spesifik → animasi → fine-tuning responsif → aksesibilitas. Jangan
-   memindahkan sebuah blok ke atas definisi token (:root) miliknya, karena
-   banyak selector di bawah bergantung pada custom property yang didefinisikan
-   di Bagian 1.
+   14 bagian bernomor, urutan ITCSS (token → reset → tipografi → layout →
+   komponen → animasi → responsif → aksesibilitas). Jangan pindahkan blok ke
+   atas :root (Bagian 1) — banyak selector bergantung token di sana.
 
    PETA BAGIAN:
-     1. DESIGN TOKENS            -> variabel warna, tipografi, spacing, radius
-     2. RESET / BASE             -> normalisasi lintas-browser
-     3. TYPOGRAPHY               -> kelas utility teks (.display-hero, .body-sm, dst.)
-     4. GLOBAL LAYOUT            -> .site-main, .section, .section-heading
-     5. OPENING CURTAIN          -> overlay sampul pembuka (lihat PDF: Arsitektur Opening Envelope)
-     6. BUTTONS & SHARED COMP.   -> .btn, audio controller, toast
-     7. WEDDING SECTIONS         -> satu blok CSS per <section> di index.html
-     8–9. COMPONENTS/FORMS       -> catatan silang (sudah tercakup di atas)
-     10. ANIMATIONS              -> @keyframes + sistem scroll-reveal (.reveal-item)
-     11. RESPONSIVE              -> penyesuaian breakpoint tambahan
-     12. ACCESSIBILITY           -> focus ring, target sentuh minimum 44px
-     13. REDUCED MOTION          -> @media (prefers-reduced-motion: reduce)
-     14. MOBILE-FIRST REFINEMENTS-> fluid type & polish akhir untuk layar kecil
+     1. DESIGN TOKENS      variabel warna, tipografi, spacing, radius
+     2. RESET / BASE       normalisasi lintas-browser
+     3. TYPOGRAPHY         kelas utility teks (.display-hero, .body-sm, dst.)
+     4. GLOBAL LAYOUT       .site-main, .section, .section-heading
+     5. OPENING CURTAIN     overlay sampul pembuka
+     6. BUTTONS & SHARED    .btn, audio controller, toast
+     7. WEDDING SECTIONS    satu blok CSS per <section> di index.html
+     10. ANIMATIONS         @keyframes + scroll-reveal (.reveal-item)
+     11. RESPONSIVE         penyesuaian breakpoint tambahan
+     12. ACCESSIBILITY      focus ring, target sentuh min. 44px
+     13. REDUCED MOTION     @media (prefers-reduced-motion: reduce)
+     14. MOBILE REFINEMENTS fluid type & polish layar kecil
 
-   KONVENSI PENAMAAN KELAS: BEM-like, mis. `.story__card` (elemen) dan
-   `.story__item--left` (modifier). Prefix ganda garis-bawah (__) = turunan
-   dari blok induk; tanda hubung ganda (--) = varian/state dari blok tsb.
+   PENAMAAN KELAS: BEM-like — `.story__card` (elemen), `.story__item--left`
+   (modifier/varian).
 
-   SUMBER WARNA TUNGGAL (SINGLE SOURCE OF TRUTH):
-   Jangan menulis kode warna hex secara langsung di luar Bagian 1. Selalu
-   gunakan var(--nama-token) agar tema (mis. ganti palet emas → perak) cukup
-   diubah di satu tempat (:root).
+   WARNA: jangan tulis hex langsung di luar Bagian 1 — selalu var(--token),
+   supaya ganti tema (mis. emas → perak) cukup di satu tempat (:root).
+
+   REVISI MODUL MINGGU 6 (Galeri Foto Interaktif & Sematan Video):
+     - § Gallery lama (grid semua foto sekaligus) DIGANTI § Gallery Slider
+       (karusel 1 foto per waktu, scroll-snap native → swipe jalan di semua
+       device tanpa library tambahan). Lihat "--- Gallery Slider ---" di
+       Bagian 7 & penyesuaiannya di Bagian 14.
+     - § Lightbox ditambah tombol Prev/Next (sebelumnya cuma Close).
+     - § Video lama (poster + tombol play custom) DIGANTI § Video Wrapper
+       (iframe YouTube responsif rasio 16:9, sesuai modul TP-3).
    ========================================================================== */
 
 
 
-   /* --------------------------------------------------------------------
-      Design Token = variabel CSS global (custom properties) yang menjadi
-      "kamus" visual seluruh situs. Jika Anda ingin mengganti tema warna
-      (mis. dari nuansa Jawa/emas-cokelat menjadi nuansa Bali/hijau-perak),
-      CUKUP ubah nilai-nilai di blok :root berikut — seluruh komponen di
-      Bagian 5–7 akan otomatis mengikuti karena semuanya mereferensikan
-      token ini, bukan nilai literal.
-      -------------------------------------------------------------------- */
+   /* 1. DESIGN TOKENS — variabel global (custom properties), "kamus" visual
+      situs. Ganti tema warna cukup di sini; semua komponen lain mengikuti
+      otomatis karena mereferensikan token, bukan nilai literal. */
    :root {
-    /* Core surfaces: warna latar gelap utama (terinspirasi warna kain
-       "sogan" batik Jawa). --sogan-deep dipakai sebagai background <body>. */
+    /* Core surfaces: warna latar gelap (terinspirasi kain "sogan" batik Jawa).
+       --sogan-deep = background <body>. */
     --sogan-deep: #1a0f07;
     --sogan-dark: #23140a;
     --sogan-card: #2d1a0d;
     --primary-container: #3b2414;
-  
-    /* Gold family: aksen emas untuk CTA, judul, ikon & border dekoratif.
-       --gold-bright = warna aksen paling menonjol (tombol, angka countdown). */
+
+    /* Gold family: aksen emas untuk CTA, judul, ikon, border.
+       --gold-bright = aksen paling menonjol (tombol, angka countdown). */
     --gold-bright: #D4AF37;
     --gold-muted: #C49A45;
     --gold-foil: #E6D19C;
-  
+
     /* Parchment / light surfaces */
     --parchment-canvas: #FBF7F2;
     --parchment-tint: #F4EFE6;
     --jasmine-white: #FFFDF9;
-  
+
     /* Supporting neutrals */
     --wood-terracotta: #8C5E35;
     --charcoal-ink: #22201E;
     --body-text: #eedfcc;
-  
-    /* Typography:
-       --font-display -> font serif elegan untuk judul besar & elemen seremonial.
-       --font-body     -> font sans-serif untuk teks baca (paragraf, label, form).
-       Kedua font dimuat via Google Fonts <link> di index.html <head>. Jika
-       ingin mengganti font, update <link> tsb DAN variabel ini bersamaan. */
+
+    /* Typography — --font-display: serif utk judul/elemen seremonial,
+       --font-body: sans-serif utk teks baca. Dimuat via Google Fonts <link>
+       di index.html <head>; ganti font = update <link> itu DAN variabel ini. */
     --font-display: 'Playfair Display', serif;
     --font-body: 'Plus Jakarta Sans', sans-serif;
-  
+
     --fs-display-hero: 56px;
     --fs-display-hero-mobile: 38px;
     --fs-headline-lg: 36px;
@@ -90,10 +84,8 @@
     --fs-label-caps: 11px;
     --fs-label-md: 14px;
     --fs-countdown-num: 32px;
-    /* Semua --fs-* di atas adalah ukuran font DESKTOP/tablet default.
-       Beberapa di antaranya di-override dengan `clamp()` fluid-type pada
-       Bagian 14 (Mobile-First Refinements) khusus untuk layar sangat kecil
-       agar hirarki judul tetap terjaga tanpa patah baris yang aneh. */
+    /* --fs-* di atas = ukuran default desktop/tablet. Sebagian di-override
+       via clamp() fluid-type di Bagian 14 untuk layar sangat kecil. */
 
     /* Radii */
     --radius-sm: 0.25rem;
@@ -101,11 +93,9 @@
     --radius-lg: 1rem;
     --radius-xl: 1.5rem;
     --radius-full: 9999px;
-  
-    /* Spacing scale: skala jarak konsisten (lihat juga PDF slide
-       "Desain Token Variabel CSS": --space-xs..--space-xxl). Gunakan token
-       ini, bukan angka px acak, untuk margin/padding antar komponen agar
-       ritme visual tetap harmonis di seluruh halaman. */
+
+    /* Spacing scale — pakai token ini (bukan angka px acak) untuk
+       margin/padding antar komponen agar ritme visual konsisten. */
     --gutter: 1.5rem;
     --gutter-mobile: 1rem;
     --space-xs: 0.25rem;
@@ -114,29 +104,27 @@
     --space-lg: 1.75rem;
     --space-xl: 3rem;
     --space-2xl: 5rem;
-  
+
     /* Elevation */
     --shadow-standard: 0 12px 36px -8px rgba(59, 36, 20, 0.35), 0 4px 12px -2px rgba(59, 36, 20, 0.2);
     --shadow-glow-gold: 0 10px 30px rgba(212, 175, 55, 0.4);
-  
+
     /* Layout */
     --content-max: 1140px; /* lebar maksimum konten pada layar desktop lebar
                                (>=1280px), lihat Bagian 11 RESPONSIVE */
   }
-  
+
   /* ==========================================================================
-     2. RESET / BASE
-     --------------------------------------------------------------------------
-     Normalisasi gaya bawaan browser. `box-sizing: border-box` universal
-     membuat padding & border dihitung DI DALAM lebar elemen (bukan menambah
-     lebar), sehingga perhitungan layout grid/flex jauh lebih mudah diprediksi.
+     2. RESET / BASE — normalisasi gaya bawaan browser.
+     box-sizing: border-box universal → padding/border dihitung DI DALAM
+     lebar elemen, bikin layout grid/flex lebih mudah diprediksi.
      ========================================================================== */
   *,
   *::before,
   *::after {
     box-sizing: border-box;
   }
-  
+
   html {
     scroll-behavior: smooth;
     scroll-padding-top: env(safe-area-inset-top, 0px);
@@ -144,12 +132,12 @@
     text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
   }
-  
+
   html, body {
     margin: 0;
     padding: 0;
   }
-  
+
   body {
     background-color: var(--sogan-deep);
     color: var(--body-text);
@@ -157,55 +145,59 @@
     font-size: var(--fs-body-md);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
-    /* PENTING — Penguncian Scroll (lihat PDF: "Stabilitas Layar dengan
-       Dynamic Viewport Height" & "Manajemen State JavaScript Cover"):
-       Body dikunci (`overflow-y: hidden`) secara default supaya tamu TIDAK
-       bisa menggulir latar belakang selama overlay <div class="curtain">
-       masih tampil menutupi layar penuh. Kelas `.is-unlocked` di bawah ini
-       ditambahkan oleh script.js (fungsi initOpeningCurtain) tepat setelah
-       animasi pembukaan sampul selesai, yang membuka kembali kemampuan
-       scroll. Jangan hapus pasangan hidden/auto ini tanpa menyesuaikan JS. */
+    /* Penguncian scroll: body dikunci (overflow-y:hidden) default supaya
+       tamu tak bisa scroll selagi overlay .curtain menutupi layar. Class
+       .is-unlocked ditambahkan script.js (initOpeningCurtain) setelah
+       animasi selesai, membuka scroll lagi. Jangan hapus pasangan
+       hidden/auto ini tanpa menyesuaikan JS. */
     overflow-y: hidden;
     overflow-x: hidden;
     overflow-wrap: break-word;
   }
-  
+
   /* Ditambahkan via JS: document.body.classList.add('is-unlocked') */
   body.is-unlocked {
     overflow-y: auto;
   }
-  
+
+  /* Ditambahkan via JS saat modal lightbox terbuka (Bagian 9B script.js):
+     mengunci scroll halaman di BELAKANG modal, terlepas dari status
+     is-unlocked, lalu dilepas lagi saat lightbox ditutup. */
+  body.lightbox-open {
+    overflow-y: hidden;
+  }
+
   /* Modern browsers: clip (not scroll) any stray horizontal bleed */
   @supports (overflow: clip) {
     body { overflow-x: clip; }
   }
-  
+
   img {
     max-width: 100%;
     display: block;
   }
-  
+
   button {
     font-family: inherit;
     cursor: pointer;
   }
-  
+
   a {
     color: inherit;
     text-decoration: none;
   }
-  
+
   ul, ol {
     margin: 0;
     padding: 0;
     list-style: none;
   }
-  
+
   ::selection {
     background: var(--gold-bright);
     color: var(--sogan-deep);
   }
-  
+
   ::-webkit-scrollbar {
     width: 6px;
   }
@@ -216,17 +208,13 @@
     background: var(--gold-muted);
     border-radius: var(--radius-full);
   }
-  
+
   /* ==========================================================================
-     3. TYPOGRAPHY
-     --------------------------------------------------------------------------
-     Kelas-kelas utility di bawah ini adalah "skala tipografi" situs: setiap
-     level (display-hero > headline-lg > headline-md > headline-sm >
-     title-script > body-lg/md/sm > label-caps/md) dipakai berulang kali di
-     markup index.html. JANGAN membuat ukuran font ad-hoc baru di komponen
-     lain — pilih salah satu kelas berikut agar hirarki visual tetap
-     konsisten. Mayoritas kelas mobile-first: nilai dasar untuk layar kecil,
-     di-override lewat @media (min-width: 640px) untuk layar lebih besar.
+     3. TYPOGRAPHY — skala tipografi situs (display-hero > headline-lg >
+     headline-md > headline-sm > title-script > body-lg/md/sm > label-caps/md),
+     dipakai berulang di index.html. Jangan bikin ukuran font ad-hoc baru di
+     komponen lain — pakai salah satu kelas ini. Mobile-first: nilai dasar
+     untuk layar kecil, di-override via @media (min-width: 640px).
      ========================================================================== */
   .display-hero {
     font-family: var(--font-display);
@@ -239,7 +227,7 @@
   @media (min-width: 640px) {
     .display-hero { font-size: var(--fs-display-hero); }
   }
-  
+
   .headline-lg {
     font-family: var(--font-display);
     font-size: var(--fs-headline-lg-mobile);
@@ -251,7 +239,7 @@
   @media (min-width: 640px) {
     .headline-lg { font-size: var(--fs-headline-lg); }
   }
-  
+
   .headline-md {
     font-family: var(--font-display);
     font-size: 22px;
@@ -263,7 +251,7 @@
   @media (min-width: 640px) {
     .headline-md { font-size: var(--fs-headline-md); }
   }
-  
+
   .headline-sm {
     font-family: var(--font-display);
     font-size: var(--fs-headline-sm);
@@ -272,7 +260,7 @@
     margin: 0;
     color: var(--jasmine-white);
   }
-  
+
   .title-script {
     font-family: var(--font-display);
     font-style: italic;
@@ -282,27 +270,27 @@
     margin: 0;
     color: var(--gold-foil);
   }
-  
+
   .body-lg {
     font-family: var(--font-body);
     font-size: var(--fs-body-lg);
     line-height: 1.65;
   }
-  
+
   .body-md {
     font-family: var(--font-body);
     font-size: var(--fs-body-md);
     line-height: 1.65;
     margin: 0;
   }
-  
+
   .body-sm {
     font-family: var(--font-body);
     font-size: var(--fs-body-sm);
     line-height: 1.55;
     margin: 0;
   }
-  
+
   .label-caps {
     font-family: var(--font-body);
     font-size: var(--fs-label-caps);
@@ -312,7 +300,7 @@
     color: var(--gold-bright);
     margin: 0;
   }
-  
+
   .label-md {
     font-family: var(--font-body);
     font-size: var(--fs-label-md);
@@ -321,7 +309,7 @@
     margin: 0;
     color: var(--jasmine-white);
   }
-  
+
   .countdown-num {
     font-family: var(--font-display);
     font-size: var(--fs-countdown-num);
@@ -329,12 +317,10 @@
     line-height: 1.1;
     color: var(--gold-bright);
   }
-  
-  /* Material Symbols base: ikon Google (favorite, calendar_today, dll.)
-     dimuat sebagai web font via <link> di <head>. Nama ikon ditulis sebagai
-     teks biasa di dalam <span class="material-symbols-outlined">nama_ikon</span>
-     dan dirender sebagai glyph oleh font ini. Untuk menambah ikon baru,
-     cukup ganti teks nama ikonnya — tidak perlu import tambahan. */
+
+  /* Material Symbols: ikon Google, dimuat sbg web font via <link> di <head>.
+     Nama ikon ditulis sbg teks biasa di <span class="material-symbols-outlined">,
+     dirender jadi glyph oleh font ini. Ganti ikon = ganti teks nama ikonnya saja. */
   .material-symbols-outlined {
     font-family: 'Material Symbols Outlined';
     font-weight: normal;
@@ -350,19 +336,14 @@
     -webkit-font-feature-settings: 'liga';
     font-feature-settings: 'liga';
   }
-  
-  /* ==========================================================================
-     4. GLOBAL LAYOUT
-     --------------------------------------------------------------------------
-     `.site-main` membungkus SELURUH <section> di dalam <main> (lihat
-     index.html). `.section` adalah kelas dasar wajib pada SETIAP <section>:
-     ia memberi padding vertikal fluid (clamp), padding horizontal yang
-     menghormati safe-area notch perangkat (env(safe-area-inset-*)), dan
-     men-stack konten secara vertikal-center.
 
-     UNTUK MENAMBAH SECTION BARU: beri elemen <section class="section nama-anda"
-     id="nama-anda">, lalu tambahkan blok CSS spesifik "nama-anda" di Bagian 7
-     mengikuti pola penamaan yang sudah ada (lihat komentar "--- Nama --- ").
+  /* ==========================================================================
+     4. GLOBAL LAYOUT — .site-main membungkus semua <section> di <main>.
+     .section = kelas dasar wajib tiap <section>: padding vertikal fluid,
+     padding horizontal yang hormati safe-area notch, stack konten vertikal.
+
+     Tambah section baru: <section class="section nama-anda" id="nama-anda">,
+     lalu tambah blok CSS "nama-anda" di Bagian 7 mengikuti pola yang ada.
      ========================================================================== */
   .site-main {
     width: 100%;
@@ -370,11 +351,11 @@
     flex-direction: column;
     align-items: center;
   }
-  
+
   .section {
     width: 100%;
-    /* padding atas/bawah: clamp(min, preferred(viewport), max) -> otomatis
-       mengecil di layar pendek & membesar di layar tinggi tanpa media query */
+    /* clamp(min, preferred, max) → padding atas/bawah otomatis menyesuaikan
+       tinggi layar tanpa media query */
     padding: clamp(3rem, 12vw, 5rem) max(var(--gutter-mobile), env(safe-area-inset-left, 0px)) clamp(3rem, 12vw, 5rem) max(var(--gutter-mobile), env(safe-area-inset-right, 0px));
     display: flex;
     flex-direction: column;
@@ -387,15 +368,13 @@
       padding-right: var(--gutter);
     }
   }
-  
-  /* Zebra-striping otomatis: section ganjil/genap memakai warna latar yang
-     sedikit berbeda (--sogan-deep vs --sogan-dark) agar batas antar-seksi
-     terasa tanpa perlu garis pembatas eksplisit. Jika Anda menyisipkan atau
-     menghapus satu <section>, urutan ganjil/genap ini otomatis menyesuaikan —
-     tidak perlu diubah manual. */
+
+  /* Zebra-striping otomatis: section ganjil/genap pakai warna latar beda
+     tipis, agar batas antar-section terasa tanpa garis pembatas. Menambah/
+     menghapus <section> otomatis menyesuaikan urutannya. */
   .section:nth-of-type(odd) { background-color: var(--sogan-deep); }
   .section:nth-of-type(even) { background-color: var(--sogan-dark); }
-  
+
   .section-heading {
     text-align: center;
     max-width: 720px;
@@ -420,55 +399,41 @@
     margin: 1rem auto 0;
     color: rgba(238, 223, 204, 0.8);
   }
-  
-  /* ==========================================================================
-     5. OPENING CURTAIN  (Sampul Pembuka / "Opening Envelope")
-     --------------------------------------------------------------------------
-     Lihat PDF: "Arsitektur Komponen Opening Envelope" & "Stabilitas Layar
-     dengan Dynamic Viewport Height". Blok ini men-style elemen
-     #theatrical-curtain di index.html: overlay full-screen (fixed, z-index
-     tertinggi di halaman = 50) yang menutupi seluruh konten sampai tombol
-     "Buka Undangan" ditekan (logikanya ada di script.js -> initOpeningCurtain).
 
-     CATATAN TEKNIS PENTING:
-     - `@supports (height: 100dvh)` dipakai untuk memastikan tinggi overlay
-       mengikuti "Dynamic Viewport Height", mencegah tombol/teks terpotong
-       oleh address bar browser mobile (terutama iOS Safari) yang muncul/
-       hilang secara dinamis saat discroll.
-     - Transisi opacity 1000ms di sini BEKERJA SAMA dengan dua setTimeout
-       di script.js (500ms lalu 1200ms) untuk menciptakan urutan animasi:
-       1) karakter wayang kiri/kanan bergeser keluar + konten memudar,
-       2) seluruh curtain fade-out,
-       3) curtain disembunyikan dari DOM (display:none) & scroll dibuka.
-       Jika Anda mengubah durasi transisi di sini, SESUAIKAN juga angka
-       setTimeout yang berkorespondensi di script.js agar animasi tetap mulus.
+  /* ==========================================================================
+     5. OPENING CURTAIN — styling #theatrical-curtain (index.html): overlay
+     full-screen (z-index 50, tertinggi) yang menutup konten sampai tombol
+     "Buka Undangan" ditekan. Logika di script.js → initOpeningCurtain().
+
+     Catatan teknis:
+     - @supports (height: 100dvh) → tinggi overlay ikut dynamic viewport,
+       cegah konten terpotong address bar browser mobile.
+     - Transisi opacity 1000ms di sini SELARAS dgn 2 setTimeout di script.js
+       (500ms & 1200ms): 1) wayang bergeser keluar + konten fade, 2) curtain
+       fade-out penuh, 3) curtain di-hide & scroll dibuka. Ubah durasi di
+       sini → sesuaikan juga angka setTimeout di script.js.
      ========================================================================== */
   .curtain {
-    position: fixed; /* lepas dari alur dokumen, menempel pada viewport (bukan parent) */
-    inset: 0;        /* shorthand utk top:0; right:0; bottom:0; left:0 -> menutupi SELURUH layar */
-    z-index: 50; /* harus lebih tinggi dari semua elemen lain (toast=50 juga,
-                    audio-controller=40) agar benar-benar menutup layar */
+    position: fixed; /* lepas dari alur dokumen, menempel ke viewport */
+    inset: 0;        /* top/right/bottom/left: 0 → menutupi seluruh layar */
+    z-index: 50;     /* tertinggi di halaman (toast=50, audio-controller=40) */
     display: flex;
-    align-items: center;    /* pusatkan konten curtain secara vertikal */
-    justify-content: center; /* pusatkan konten curtain secara horizontal */
-    background: var(--sogan-deep); /* latar gelap solid, konsisten dgn body */
+    align-items: center;
+    justify-content: center;
+    background: var(--sogan-deep);
     color: var(--jasmine-white);
-    transition: opacity 1000ms ease-in-out; /* DIPICU oleh script.js (dom.curtain.style.opacity='0') pada t=500ms -> lihat initOpeningCurtain() */
-    overflow: hidden; /* sembunyikan bagian wayang/awan yang sengaja digeser keluar batas elemen */
-    /* respect notch / home-indicator: tambahkan padding selebar safe-area
-       perangkat (notch iPhone, dsb.) agar konten tidak tertutup elemen
-       sistem operasi */
+    transition: opacity 1000ms ease-in-out; /* dipicu script.js t=500ms, lihat initOpeningCurtain() */
+    overflow: hidden; /* sembunyikan wayang/awan yang digeser keluar batas elemen */
+    /* padding selebar safe-area (notch, home-indicator) agar konten tak tertutup elemen sistem */
     padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   }
-  /* Browser yang mendukung unit dvh (dynamic viewport height, mayoritas
-     browser modern 2023+): paksa tinggi curtain mengikuti viewport
-     DINAMIS (menyusut saat address bar browser mobile muncul), bukan
-     100vh statis yang bisa menyebabkan curtain "lebih tinggi dari layar
-     terlihat" di iOS Safari saat address bar sedang tampil. */
+  /* Browser modern yang dukung unit dvh: tinggi curtain ikut viewport
+     dinamis (menyusut saat address bar muncul), bukan 100vh statis yang
+     bisa membuat curtain "kelebihan tinggi" di iOS Safari. */
   @supports (height: 100dvh) {
     .curtain { height: 100dvh; bottom: auto; }
   }
-  
+
   .curtain__atmosphere {
     position: absolute;
     inset: 0;
@@ -498,20 +463,18 @@
     .curtain__cloud--left { left: 3rem; }
     .curtain__cloud--right { right: 3rem; }
   }
-  
+
   .curtain__wayang {
     position: absolute;
-    bottom: 0; top: 0;             /* rentangkan penuh tinggi curtain */
-    width: clamp(6.5rem, 38vw, 9.5rem); /* fluid width: minimal 6.5rem, maksimal 9.5rem, mengikuti 38% lebar viewport di antaranya -> figur wayang proporsional di HP sempit maupun lebar */
+    bottom: 0; top: 0;                  /* rentang penuh tinggi curtain */
+    width: clamp(6.5rem, 38vw, 9.5rem); /* fluid width, proporsional di HP sempit maupun lebar */
     display: flex;
-    align-items: center;           /* figur wayang vertically centered */
-    pointer-events: none;          /* dekoratif saja, tidak boleh "mencuri" klik dari tombol di belakangnya */
-    z-index: 10;                   /* di atas atmosphere (awan/pendopo) tapi di bawah curtain__content (z-index 20) */
-    /* transisi INILAH yang dipakai script.js saat tombol diklik: JS hanya
-       mengubah `transform` & `opacity` secara inline, transisi HALUS 1600ms
-       dengan easing cubic-bezier custom ini yang membuatnya "meluncur
-       keluar" alih-alih melompat instan. SESUAIKAN durasi 1600ms ini jika
-       timeline animasi di script.js (500ms/1200ms) diubah. */
+    align-items: center;
+    pointer-events: none; /* dekoratif, jangan mencuri klik dari tombol di belakangnya */
+    z-index: 10;          /* di atas atmosphere, di bawah curtain__content (20) */
+    /* script.js mengubah transform/opacity inline saat tombol diklik —
+       transisi 1600ms di sini yang membuatnya "meluncur keluar" halus.
+       Ubah durasi di sini → sesuaikan juga timeline script.js (500ms/1200ms). */
     transition: transform 1600ms cubic-bezier(0.16, 1, 0.3, 1), opacity 1600ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   .curtain__wayang img {
@@ -549,7 +512,7 @@
     @media (min-width: 640px) { .curtain__wayang img { height: 75dvh; } }
   }
   @media (min-width: 768px) { .curtain__wayang { width: 20rem; } }
-  
+
   .curtain__content {
     position: relative;
     z-index: 20;
@@ -563,7 +526,7 @@
     margin: 0 auto;
     transition: opacity 700ms, transform 700ms;
   }
-  
+
   .curtain__gunungan-wrap { margin-bottom: 0.75rem; }
   .curtain__gunungan {
     width: clamp(4.5rem, 24vw, 6rem);
@@ -571,7 +534,7 @@
     filter: drop-shadow(0 10px 25px rgba(212, 175, 55, 0.45));
   }
   @media (min-width: 640px) { .curtain__gunungan { width: 8rem; } }
-  
+
   .curtain__eyebrow { margin-bottom: 0.25rem; }
   .curtain__title {
     color: var(--jasmine-white);
@@ -580,7 +543,7 @@
   }
   .curtain__subtitle { font-size: clamp(1rem, 4.6vw, 1.125rem); margin-bottom: clamp(1rem, 4vw, 1.5rem); }
   @media (min-width: 640px) { .curtain__subtitle { font-size: 1.5rem; } }
-  
+
   .guest-pill {
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(212, 175, 55, 0.3);
@@ -601,32 +564,29 @@
     font-style: italic;
     color: rgba(238, 223, 204, 0.7);
   }
-  
+
   /* ==========================================================================
-     6. BUTTONS & SHARED COMPONENTS
-     --------------------------------------------------------------------------
-     Komponen yang dipakai berulang di banyak section: tombol (.btn dan 3
-     variannya), pill tanggal (.date-pill), kontrol musik mengambang
-     (.audio-controller, lihat script.js -> initAudioController), dan
-     notifikasi toast (.toast, lihat script.js -> showToast()).
+     6. BUTTONS & SHARED COMPONENTS — komponen berulang lintas-section: tombol
+     (.btn + 3 varian), .date-pill, audio controller mengambang (lihat
+     script.js → initAudioController), toast (lihat script.js → showToast()).
      ========================================================================== */
   .btn {
-    display: inline-flex;       /* flex tapi tidak full-width, mengikuti ukuran konten (ikon+teks) */
-    align-items: center;        /* sejajarkan ikon & teks label secara vertikal */
-    gap: 0.5rem;                 /* jarak antara ikon material-symbols & teks */
+    display: inline-flex;   /* ikut lebar konten (ikon+teks), bukan full-width */
+    align-items: center;
+    gap: 0.5rem;
     border: none;
-    border-radius: var(--radius-full); /* bentuk pill/kapsul penuh */
+    border-radius: var(--radius-full); /* bentuk pill */
     font-family: var(--font-body);
     font-size: var(--fs-label-md);
     font-weight: 700;
-    text-transform: uppercase;   /* semua tombol tampil HURUF BESAR secara visual (teks asli di HTML tetap normal, CSS yg mengubah tampilannya) */
-    letter-spacing: 0.15em;      /* jarak antar huruf lebar -> kesan elegan/formal khas undangan */
+    text-transform: uppercase;   /* teks HTML asli tetap normal, CSS yang mengubah tampilan */
+    letter-spacing: 0.15em;      /* kesan elegan khas undangan */
     padding: 0.9rem 2rem;
-    transition: transform 250ms, box-shadow 250ms; /* basis utk efek :hover/:active di bawah */
+    transition: transform 250ms, box-shadow 250ms;
   }
-  .btn:hover { transform: scale(1.05); }  /* membesar sedikit saat kursor di atas (feedback interaktif) */
-  .btn:active { transform: scale(0.95); } /* mengecil sedikit saat DIKLIK/ditekan (micro-interaction "tombol ditekan") */
-  
+  .btn:hover { transform: scale(1.05); }  /* membesar saat hover */
+  .btn:active { transform: scale(0.95); } /* mengecil saat ditekan */
+
   /* Varian 1: tombol aksi utama (CTA) — gradien emas, dipakai pada
      "Buka Undangan" & "Simpan ke Kalender" */
   .btn--gold {
@@ -635,7 +595,7 @@
     box-shadow: var(--shadow-glow-gold);
   }
   .btn--gold:hover { box-shadow: 0 15px 40px rgba(212, 175, 55, 0.7); }
-  
+
   .btn--gold-solid {
     background: var(--gold-bright);
     color: var(--sogan-deep);
@@ -643,7 +603,7 @@
     padding: 0.65rem 1.5rem;
   }
   .btn--gold-solid:hover { background: var(--gold-muted); }
-  
+
   .btn--outline-gold {
     background: var(--sogan-dark);
     color: var(--gold-bright);
@@ -657,7 +617,7 @@
     background: var(--gold-bright);
     color: var(--sogan-deep);
   }
-  
+
   .date-pill {
     display: inline-flex;
     align-items: center;
@@ -672,15 +632,12 @@
     font-size: var(--fs-body-sm);
     margin-top: 0.5rem;
   }
-  
-  /* Floating Audio Controller — tombol mengambang di pojok kanan bawah
-     untuk memutar/menghentikan musik gamelan latar (elemen <audio> saat ini
-     DI-COMMENT di index.html; aktifkan dengan menyediakan file
-     assets/audio/Kebo Giro.mp3 dan membuka komentar tag <audio>).
-     Disk (.audio-controller__disc) berputar lewat @keyframes spin-slow
-     HANYA saat aria-pressed="true" (lihat aturan di bawah & script.js
-     -> updateAudioButtonState). z-index 40 < curtain(50)/toast(50) agar
-     tidak menutupi overlay pembuka atau notifikasi. */
+
+  /* Audio Controller — tombol mengambang kanan-bawah utk musik gamelan
+     (elemen <audio> masih di-comment di index.html, lihat section 02 di
+     sana). Disk berputar (@keyframes spin-slow) hanya saat aria-pressed=
+     "true" (lihat script.js → updateAudioButtonState). z-index 40, di bawah
+     curtain/toast (50) agar tak menutupinya. */
   .audio-controller {
     position: fixed;
     bottom: 1.5rem;
@@ -729,10 +686,9 @@
     padding-right: 0.25rem;
   }
   @media (min-width: 640px) { .audio-controller__text { display: flex; } }
-  
-  /* Toast Notification — notifikasi singkat (mis. "Nomor rekening berhasil
-     disalin!"). Default `display:none`; kelas `.is-visible` ditambahkan oleh
-     script.js -> showToast() dan dihapus otomatis via setTimeout 3 detik. */
+
+  /* Toast — notifikasi singkat. Default display:none; class .is-visible
+     ditambahkan script.js → showToast(), dihapus otomatis via setTimeout 3 detik. */
   .toast {
     position: fixed;
     top: 2rem;
@@ -751,46 +707,36 @@
     font-size: var(--fs-body-sm);
   }
   .toast.is-visible { display: flex; }
-  
+
   /* ==========================================================================
-     7. WEDDING SECTIONS
-     --------------------------------------------------------------------------
-     Bagian TERBESAR dan PALING SERING DIUBAH dari file ini. Setiap
-     sub-bagian "--- Nama ---" berikut berkorespondensi SATU-KE-SATU dengan
-     satu <section id="nama"> di index.html (urutan sub-bagian CSS di bawah
-     sengaja mengikuti urutan section di markup, dari atas ke bawah halaman):
+     7. WEDDING SECTIONS — bagian TERBESAR & PALING SERING DIUBAH. Tiap
+     sub-bagian "--- Nama ---" = satu <section id="nama"> di index.html,
+     urutan sama persis dengan urutan section di markup:
 
-       Hero            -> #hero            (sampul utama setelah curtain dibuka)
-       Intro / Doa     -> #intro-doa       (kartu QS. Ar-Rum:21)
-       Couple          -> #couple          (profil kedua mempelai)
-       Quote           -> #quote           (filosofi Jawa — saat ini di-comment)
-       Countdown       -> #countdown       (hitung mundur real-time)
-       Events          -> #events          (susunan acara akad & resepsi)
-       Location        -> #location        (peta & tata tertib tamu)
-       Streaming       -> #streaming       (live streaming — saat ini di-comment)
-       Story/Timeline  -> #story           (linimasa kisah cinta, lihat PDF
-                                             "Struktur Semantik Timeline Love
-                                             Story" & "Tata Letak Timeline
-                                             Seluler/Desktop")
-       Gallery         -> #gallery         (galeri foto — saat ini di-comment)
-       Lightbox        -> modal galeri (dipasang sebagai child <main>, bukan section)
-       Video           -> #video           (teaser video — saat ini di-comment)
-       Gift            -> #gift            (nomor rekening — saat ini di-comment)
-       RSVP Form       -> #rsvp            (form konfirmasi — saat ini di-comment)
-       Wishes          -> #wishes          (buku tamu — saat ini di-comment)
-       Closing         -> #closing         (<footer> penutup)
+       Hero            #hero            sampul utama setelah curtain
+       Intro / Doa     #intro-doa       kartu QS. Ar-Rum:21
+       Couple          #couple          profil mempelai
+       Quote           #quote           filosofi Jawa — nonaktif
+       Countdown       #countdown       hitung mundur real-time
+       Events          #events          susunan acara akad & resepsi
+       Location        #location        peta & tata tertib tamu
+       Streaming       #streaming       live streaming — nonaktif
+       Story/Timeline  #story           linimasa kisah cinta
+       Gallery Slider  #gallery         karusel foto (AKTIF, Minggu 6)
+       Lightbox        modal galeri, child <main> (bukan section)
+       Video           #video           iframe YouTube (AKTIF, Minggu 6)
+       Gift            #gift            nomor rekening — nonaktif
+       RSVP Form       #rsvp            form konfirmasi — nonaktif
+       Wishes          #wishes          buku tamu — nonaktif
+       Closing         #closing         <footer> penutup
 
-     CATATAN: beberapa section di index.html saat ini dibungkus komentar HTML
-     (dinonaktifkan sementara oleh tim/mentor magang) tetapi CSS-nya tetap
-     dipertahankan di bawah agar siap dipakai kembali begitu markup-nya
-     diaktifkan ulang. Jangan menghapus blok CSS yang section HTML-nya masih
-     di-comment — itu disengaja untuk pengembangan berikutnya.
+     Section yang nonaktif di index.html (dibungkus komentar HTML) tetap
+     punya CSS lengkap di bawah — JANGAN dihapus, biar langsung siap pakai
+     saat markup-nya diaktifkan lagi.
      ========================================================================== */
-  
-  /* --- Hero ---
-     Section pembuka setelah curtain hilang: nama mempelai + tanggal acara.
-     min-height:100vh (lihat juga override 100dvh di bawah jika ada) membuat
-     hero selalu memenuhi satu layar penuh sebagai "first impression". */
+
+  /* --- Hero --- Section pembuka setelah curtain hilang: nama mempelai +
+     tanggal acara. min-height:100vh = selalu memenuhi satu layar penuh. */
   .hero {
     min-height: 100vh;
     justify-content: center;
@@ -822,7 +768,7 @@
   .hero__cloud--left { top: 3rem; left: 1.5rem; }
   .hero__cloud--right { bottom: 4rem; right: 1.5rem; }
   @media (min-width: 768px) { .hero__cloud { width: 20rem; } }
-  
+
   .hero__content {
     position: relative;
     z-index: 10;
@@ -839,12 +785,12 @@
     filter: drop-shadow(0 8px 20px rgba(212, 175, 55, 0.4));
   }
   @media (min-width: 768px) { .hero__crest { width: 8rem; } }
-  
+
   .hero__eyebrow { margin-bottom: 0.75rem; }
   .hero__title { color: var(--jasmine-white); margin-bottom: 0.75rem; }
   .hero__subtitle { font-size: 1.5rem; margin-bottom: 1.5rem; }
   @media (min-width: 768px) { .hero__subtitle { font-size: 2.25rem; } }
-  
+
   .hero__jasmine {
     width: 100%;
     max-width: 28rem;
@@ -852,7 +798,7 @@
     opacity: 0.85;
   }
   .hero__jasmine img { filter: brightness(1.25); }
-  
+
   .hero__divider {
     position: absolute;
     bottom: 0;
@@ -864,7 +810,7 @@
     pointer-events: none;
   }
   .hero__divider img { width: 100%; max-width: 42rem; object-fit: contain; }
-  
+
   /* --- Intro / Doa --- */
   .doa-card {
     max-width: 48rem;
@@ -879,7 +825,7 @@
     overflow: hidden;
   }
   @media (min-width: 640px) { .doa-card { padding: 3rem; } }
-  
+
   .doa-card__corner {
     position: absolute;
     width: 3.5rem;
@@ -890,7 +836,7 @@
   .doa-card__corner--tr { top: 0.5rem; right: 0.5rem; transform: scaleX(-1); }
   .doa-card__corner--bl { bottom: 0.5rem; left: 0.5rem; transform: scaleY(-1); }
   .doa-card__corner--br { bottom: 0.5rem; right: 0.5rem; transform: scale(-1, -1); }
-  
+
   .doa-card__arabic {
     color: var(--gold-foil);
     display: block;
@@ -899,7 +845,7 @@
     font-size: 1.5rem;
   }
   @media (min-width: 640px) { .doa-card__arabic { font-size: 2.25rem; } }
-  
+
   .doa-card__ref {
     display: block;
     margin-bottom: 0.75rem;
@@ -912,7 +858,7 @@
     font-size: 1rem;
   }
   @media (min-width: 640px) { .doa-card__quote { font-size: 1.125rem; } }
-  
+
   .doa-card__rule {
     width: 5rem;
     height: 2px;
@@ -931,11 +877,10 @@
     margin: 4rem auto 0;
     opacity: 0.6;
   }
-  
-  /* --- Couple ---
-     Grid 2 kartu profil mempelai (.couple-card) dipisah oleh simbol "&"
-     (.couple__connector). Di layar sempit kartu akan stack vertikal — lihat
-     penyesuaian di Bagian 14 (komentar "Couple: keep the '&' on mobile..."). */
+
+  /* --- Couple --- Grid 2 kartu profil (.couple-card), dipisah simbol "&"
+     (.couple__connector). Di layar sempit kartu stack vertikal — lihat juga
+     penyesuaian di Bagian 14. */
   .couple__grid {
     max-width: 72rem;
     width: 100%;
@@ -949,7 +894,7 @@
       grid-template-columns: 5fr 1fr 5fr;
     }
   }
-  
+
   .couple-card {
     background: var(--sogan-card);
     border: 1px solid rgba(212, 175, 55, 0.25);
@@ -963,7 +908,7 @@
     transition: border-color 300ms;
   }
   .couple-card:hover { border-color: rgba(212, 175, 55, 0.6); }
-  
+
   .couple-card__photo {
     width: 14rem;
     height: 18rem;
@@ -980,7 +925,7 @@
     object-fit: cover;
     object-position: top;
   }
-  
+
   .couple-card__role { margin-bottom: 0.25rem; }
   .couple-card__name { margin-bottom: 0.5rem; }
   .couple-card__parents {
@@ -989,7 +934,7 @@
     margin-bottom: 1rem;
   }
   .couple-card__parents strong { color: var(--gold-foil); }
-  
+
   .social-chip {
     display: inline-flex;
     align-items: center;
@@ -1004,7 +949,7 @@
     transition: background 200ms, color 200ms;
   }
   .social-chip:hover { background: var(--gold-bright); color: var(--sogan-deep); }
-  
+
   .couple__connector {
     display: none;
     flex-direction: column;
@@ -1016,10 +961,9 @@
   .couple__connector img { width: 6rem; filter: brightness(1.25); }
   .couple__connector-flip { transform: scaleY(-1); }
   .couple__connector span { font-size: 2.25rem; margin: 0.5rem 0; }
-  
-  /* --- Quote (saat ini TIDAK AKTIF — markup-nya di-comment di index.html) ---
-     Menampilkan filosofi/pepatah Jawa sebagai kutipan besar bergaya italic.
-     Styling tetap dipertahankan agar dapat langsung dipakai ulang. */
+
+  /* --- Quote — NONAKTIF (markup di-comment di index.html) ---
+     Kutipan filosofi Jawa bergaya italic besar. CSS dipertahankan agar siap pakai ulang. */
   .quote { text-align: center; }
   .quote__content { max-width: 48rem; }
   .quote__eyebrow { display: block; margin-bottom: 0.75rem; }
@@ -1037,72 +981,62 @@
     max-width: 36rem;
     margin: 0 auto;
   }
-  
-  /* --- Countdown ---
-     Lihat PDF: "Kalkulasi Waktu", "Konversi Milidetik ke Unit Diskrit",
-     "Aksesibilitas DOM pada Countdown Timer", "Stabilitas Antarmuka Timer
-     (Zero CLS)". Styling di sini HARUS selaras dengan logika JS di
-     script.js (fungsi updateCountdown, showCountdownTimer/Message):
-     - `.countdown__grid` adalah container 4 kotak (Hari/Jam/Menit/Detik)
-       dengan role="timer" aria-live="polite" di markup.
-     - `.countdown-num` memakai font-variant-numeric: tabular-nums (lihat
-       definisi di Bagian 3 Typography) + lebar kotak tetap agar pergantian
-       angka tiap detik TIDAK memicu Cumulative Layout Shift (CLS=0).
-     - `#countdown-message` (fase "doa"/"thanks") disembunyikan via inline
-       style="display:none" dan di-toggle oleh showCountdownTimer()/
-       showCountdownMessage() di JS — jangan mengubah mekanisme show/hide
-       ini di CSS tanpa menyesuaikan JS, karena JS menulis langsung ke
-       elemen.style.display. */
-  .countdown { text-align: center; position: relative; overflow: hidden; } /* overflow:hidden membungkus 2 gambar dekoratif .countdown__bg agar tidak bocor keluar section */
+
+  /* --- Countdown --- Styling di sini harus selaras dgn logika JS di
+     script.js (updateCountdown, showCountdownTimer/Message):
+     - .countdown__grid = container 4 kotak (Hari/Jam/Menit/Detik), markup
+       pakai role="timer" aria-live="polite".
+     - .countdown-num pakai tabular-nums (Bagian 3) + lebar kotak konsisten
+       agar ganti angka tiap detik tidak memicu layout shift.
+     - #countdown-message (fase doa/thanks) di-toggle via inline
+       style.display oleh JS — jangan ubah mekanisme show/hide ini di CSS
+       tanpa menyesuaikan JS. */
+  .countdown { text-align: center; position: relative; overflow: hidden; } /* overflow:hidden agar .countdown__bg tak bocor keluar section */
   .countdown__bg {
-    position: absolute; /* dekorasi latar, lepas dari alur normal */
+    position: absolute;
     inset: 0;
-    opacity: 0.1;        /* sangat transparan -> hanya aksen tekstur halus, tidak mengganggu keterbacaan angka */
+    opacity: 0.1;   /* aksen tekstur halus, tidak ganggu keterbacaan angka */
     display: flex;
     align-items: center;
-    justify-content: space-around; /* 2 gambar frame tersebar kiri-kanan */
-    pointer-events: none; /* murni dekoratif, tidak boleh menghalangi klik/scroll */
+    justify-content: space-around;
+    pointer-events: none; /* murni dekoratif */
   }
   .countdown__bg img { height: 100%; object-fit: contain; }
-  .countdown__bg--flip { transform: scaleX(-1); } /* cerminkan gambar kedua secara horizontal agar simetris dgn yg pertama (hemat 1 aset gambar) */
-  
+  .countdown__bg--flip { transform: scaleX(-1); } /* cerminkan gambar kedua, hemat 1 aset */
+
   .countdown__content {
-    position: relative; /* perlu agar z-index berlaku & konten berada DI ATAS .countdown__bg */
+    position: relative; /* agar z-index berlaku, konten di atas .countdown__bg */
     z-index: 10;
     max-width: 56rem;
     width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center; /* semua children center secara horizontal (judul, grid angka, dsb.) */
+    align-items: center;
   }
   .countdown__eyebrow { margin-bottom: 0.5rem; }
   .countdown__title { margin-bottom: 1rem; }
   .countdown__lead {
-    color: rgba(238, 223, 204, 0.8); /* --body-text dengan sedikit transparansi -> hierarki visual lebih rendah dari judul */
-    max-width: 28rem;                 /* batasi lebar baris teks agar tetap nyaman dibaca (tidak melebar penuh di layar besar) */
+    color: rgba(238, 223, 204, 0.8);
+    max-width: 28rem;
     margin-bottom: 2.5rem;
   }
-  
-  /* .countdown__grid = KONTAINER untuk 4 kotak angka DAN untuk elemen
-     #countdown-message (teks doa/terima kasih) secara BERGANTIAN — lihat
-     markup index.html: keduanya anak dari section yang sama, tapi JS
-     men-toggle display salah satunya via showCountdownTimer()/
-     showCountdownMessage(). Grid di bawah ini KHUSUS styling saat MODE
-     ANGKA aktif. */
+
+  /* .countdown__grid dipakai bergantian dgn #countdown-message (JS
+     men-toggle display salah satunya). Styling di bawah khusus mode angka. */
   .countdown__grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* MOBILE: 2 kolom -> tersusun 2x2 (Hari,Jam / Menit,Detik) agar kotak tidak terlalu kecil di layar sempit */
+    grid-template-columns: repeat(2, 1fr); /* mobile: 2x2 (Hari,Jam / Menit,Detik) */
     gap: 1rem;
     width: 100%;
     max-width: 40rem;
     margin-bottom: 2.5rem;
   }
   @media (min-width: 640px) {
-    .countdown__grid { grid-template-columns: repeat(4, 1fr); gap: 1.5rem; } /* DESKTOP/TABLET: 4 kolom sejajar -> Hari Jam Menit Detik berjajar satu baris */
+    .countdown__grid { grid-template-columns: repeat(4, 1fr); gap: 1.5rem; } /* desktop: 4 kolom sejajar */
   }
-  
+
   .countdown-badge {
-    position: relative; /* anchor untuk .countdown-badge__icon absolute di bawah */
+    position: relative; /* anchor .countdown-badge__icon */
     background: var(--sogan-card);
     border: 1px solid rgba(212, 175, 55, 0.4);
     border-radius: var(--radius-lg);
@@ -1112,27 +1046,22 @@
     align-items: center;
     justify-content: center;
     box-shadow: var(--shadow-standard);
-    /* CATATAN ZERO-CLS: kotak ini TIDAK diberi width/min-width tetap
-       secara eksplisit di sini karena grid induk (grid-template-columns)
-       sudah membagi ruang secara merata & konsisten setiap render —
-       kombinasi grid + font-variant-numeric:tabular-nums pada
-       .countdown-num (lihat Bagian 3 TYPOGRAPHY) sudah cukup untuk
-       mencegah pergeseran lebar kotak saat angka berganti tiap detik
-       (mis. dari "9" ke "10" hari). */
+    /* Tidak perlu width/min-width tetap — grid induk + tabular-nums pada
+       .countdown-num sudah cukup mencegah layout shift saat angka berganti. */
   }
   .countdown-badge__icon {
     position: absolute;
-    top: 0.25rem; left: 0.25rem; /* tempel di pojok kiri-atas kotak, sebagai motif dekoratif bunga melati kecil */
+    top: 0.25rem; left: 0.25rem; /* motif melati kecil di pojok kiri-atas */
     width: 1.5rem;
     opacity: 0.6;
     pointer-events: none;
   }
-  .countdown-badge .countdown-num { margin-top: 0.25rem; } /* elemen #timer-days/hours/minutes/seconds dari script.js dirender di sini */
-  .countdown-badge .label-caps { margin-top: 0.25rem; }    /* label "Hari"/"Jam"/"Menit"/"Detik" statis di bawah angka */
-  
+  .countdown-badge .countdown-num { margin-top: 0.25rem; } /* diisi script.js (#timer-days/hours/minutes/seconds) */
+  .countdown-badge .label-caps { margin-top: 0.25rem; }    /* label statis "Hari"/"Jam"/dst. */
+
   /* --- Events --- */
   .events__grid {
-    
+
     max-width: 64rem;
     width: 100%;
     display: grid;
@@ -1140,7 +1069,7 @@
     gap: 2rem;
   }
   @media (min-width: 768px) { .events__grid { grid-template-columns: 1fr 1fr; } }
-  
+
   .event-card {
     background: var(--sogan-card);
     border: 1px solid rgba(212, 175, 55, 0.3);
@@ -1188,7 +1117,7 @@
   }
   .event-card__meta-row .material-symbols-outlined { color: var(--gold-bright); margin-top: 0.125rem; }
   .event-card__meta-row .body-sm { color: rgba(238, 223, 204, 0.7); margin-top: 0.1rem; }
-  
+
   .event-card__dresscode {
     padding-top: 1rem;
     border-top: 1px solid rgba(212, 175, 55, 0.2);
@@ -1210,7 +1139,7 @@
     display: inline-block;
   }
   .swatch--gold { background: var(--gold-bright); }
-  
+
   /* --- Location --- */
   .location__grid {
     max-width: 64rem;
@@ -1223,7 +1152,7 @@
   @media (min-width: 1024px) {
     .location__grid { grid-template-columns: 8fr 4fr; }
   }
-  
+
   .map-card {
     background: var(--sogan-card);
     border: 1px solid rgba(212, 175, 55, 0.3);
@@ -1290,7 +1219,7 @@
     gap: 0.25rem;
     color: var(--gold-bright);
   }
-  
+
   .rules-card {
     background: var(--sogan-card);
     border: 1px solid rgba(212, 175, 55, 0.3);
@@ -1319,7 +1248,7 @@
   }
   .rules-card__contact .label-caps { display: block; margin-bottom: 0.25rem; }
   .rules-card__contact .body-sm { color: var(--body-text); }
-  
+
   /* --- Streaming --- */
   .streaming { padding-top: var(--space-xl); padding-bottom: var(--space-xl); }
   .streaming__card {
@@ -1358,72 +1287,53 @@
   }
   .streaming__icon .material-symbols-outlined { font-size: 32px; animation: pulse 2s infinite; }
   .streaming__info p { margin-top: 0.25rem; color: rgba(238, 223, 204, 0.8); }
-  
-  /* --- Story / Timeline ---
-     Lihat PDF slide "Struktur Semantik Timeline Love Story" (ordered list >
-     list item > article container > time wrapper) dan "Tata Letak Timeline
-     Seluler (Single-Column)" / "Tata Letak Timeline Desktop (Alternating
-     Two-Column)". Struktur HTML: <ol class="story__timeline"> berisi <li
-     class="story__item story__item--left|--right">, masing-masing memuat
-     <article class="story__card"> + <span class="story__node"> (titik ikon
-     pada garis sumbu).
 
-     - MOBILE (default): satu kolom, garis sumbu vertikal via ::before di
-       sisi kiri, semua kartu rata kiri terlepas dari modifier left/right.
-     - DESKTOP (>=768px, lihat media query turunannya di bawah blok ini):
-       layout berubah "alternating two-column" — item dengan class
-       `--right` ditempatkan di SEBELAH KIRI garis sumbu teks rata kanan,
-       dan item `--left` di SEBELAH KANAN garis sumbu teks rata kiri
-       (penamaan class mengacu pada KONTEN, mengikuti urutan ganjil/genap
-       pada PDF, bukan posisi visualnya — periksa aturan nth-child/left-right
-       di bawah bila ingin membalik urutan).
-     - UNTUK MENAMBAH MOMEN BARU: duplikasi satu <li class="story__item
-       story__item--left"> atau `--right` berikutnya di index.html (ikuti
-       pola selang-seling), lengkap dengan <time datetime="YYYY-MM"> untuk
-       keterbacaan mesin, judul <h4>, foto <figure class="story__photo">
-       (lihat sub-bagian "Photo Slot" di bawah untuk fallback ikon jika
-       gambar belum tersedia), dan deskripsi <p>. Tidak perlu mengubah CSS
-       apa pun — seluruh style sudah generik berbasis class, bukan nth-child
-       index tetap. */
+  /* --- Story / Timeline ---
+     Markup: <ol class="story__timeline"> > <li class="story__item
+     story__item--left|--right"> > <article class="story__card"> +
+     <span class="story__node"> (titik ikon di garis sumbu).
+
+     - Mobile (default): 1 kolom, garis sumbu vertikal (::before) di kiri,
+       semua kartu rata kiri.
+     - Desktop (≥768px): "alternating two-column" — item --right di kiri
+       garis (rata kanan), item --left di kanan garis (rata kiri).
+     - Tambah momen baru: duplikasi satu <li>, lanjutkan pola selang-seling
+       --left/--right di index.html, isi <time datetime>, <h4>, foto, <p>.
+       Tidak perlu ubah CSS — semua style berbasis class, bukan nth-child. */
   .story__timeline {
     max-width: 56rem;
     width: 100%;
-    position: relative; /* anchor untuk ::before (garis sumbu) & .story__node (titik) yang absolute */
+    position: relative; /* anchor ::before (garis sumbu) & .story__node */
     display: flex;
-    flex-direction: column; /* MOBILE: susun <li> vertikal berurutan (single-column) */
-    gap: 3rem;               /* jarak antar momen */
-    padding-left: 3.5rem;    /* MOBILE: beri ruang di kiri untuk garis sumbu + titik node, supaya kartu tidak menimpanya */
+    flex-direction: column; /* mobile: <li> disusun vertikal */
+    gap: 3rem;
+    padding-left: 3.5rem;    /* mobile: ruang kiri utk garis sumbu + node */
   }
-  /* Garis sumbu vertikal (timeline connector line), dibuat dari pseudo-
-     element ::before (bukan elemen <div> terpisah) agar tidak menambah
-     markup HTML tambahan — murni dekorasi. */
+  /* Garis sumbu, dibuat dari ::before (bukan <div> terpisah) — murni dekorasi */
   .story__timeline::before {
     content: '';
     position: absolute;
     top: 0;
-    bottom: 0;          /* top:0 + bottom:0 -> garis merentang penuh dari momen pertama sampai terakhir */
-    left: 1.5rem;        /* MOBILE: garis ditempatkan di SISI KIRI container (1.5rem dari tepi) */
+    bottom: 0;
+    left: 1.5rem;     /* mobile: garis di sisi kiri container */
     width: 2px;
-    background: rgba(212, 175, 55, 0.3); /* emas transparan -> garis halus, tidak terlalu mencolok */
+    background: rgba(212, 175, 55, 0.3);
   }
   @media (min-width: 768px) {
-    .story__timeline { padding-left: 0; } /* DESKTOP: padding kiri khusus mobile tidak diperlukan lagi karena layout berubah 2-kolom simetris */
-    .story__timeline::before { left: 50%; transform: translateX(-50%); } /* DESKTOP: garis dipindah & dipusatkan TEPAT DI TENGAH container (left:50% + translateX(-50%) = teknik centering absolute yang presisi terlepas dari lebar garis) */
+    .story__timeline { padding-left: 0; }
+    .story__timeline::before { left: 50%; transform: translateX(-50%); } /* desktop: garis di tengah */
   }
-  
+
   .story__item {
-    position: relative; /* anchor bagi .story__node (titik ikon) milik item ini */
+    position: relative; /* anchor .story__node milik item ini */
     display: flex;
-    align-items: center; /* kartu & titik node sejajar vertikal di tengah tiap item */
+    align-items: center;
   }
-  /* DESKTOP SAJA: tentukan di sisi mana (kiri/kanan garis sumbu) kartu
-     akan ditempatkan, berdasarkan modifier class --right/--left yang
-     dipasang manual di HTML secara selang-seling. justify-content pada
-     flex container inilah yang MENDORONG .story__card (lebar 50%-3rem,
-     lihat di bawah) ke salah satu sisi. */
+  /* Desktop: modifier --right/--left (dipasang manual, selang-seling di
+     HTML) menentukan sisi kartu lewat justify-content flex container. */
   @media (min-width: 768px) {
-    .story__item--right { justify-content: flex-start; } /* dorong kartu ke KIRI garis (mulai dari flex-start container) */
-    .story__item--left { justify-content: flex-end; }    /* dorong kartu ke KANAN garis (nempel ke flex-end container) */
+    .story__item--right { justify-content: flex-start; } /* kartu ke kiri garis */
+    .story__item--left { justify-content: flex-end; }    /* kartu ke kanan garis */
   }
   .story__card {
     background: var(--sogan-card);
@@ -1431,46 +1341,39 @@
     border-radius: var(--radius-lg);
     padding: 1.5rem;
     box-shadow: var(--shadow-standard);
-    width: 100%; /* MOBILE: kartu memenuhi lebar penuh container (minus padding-left dari .story__timeline) */
+    width: 100%; /* mobile: penuh lebar container */
   }
   @media (min-width: 768px) {
-    /* DESKTOP: kartu hanya mengisi SETENGAH lebar container dikurangi
-       3rem jarak aman ke garis sumbu di tengah -> inilah yang
-       menciptakan tampilan "alternating two-column" bersama aturan
-       justify-content di atas. */
-    .story__card { width: calc(50% - 3rem); }
+    .story__card { width: calc(50% - 3rem); } /* desktop: setengah lebar - jarak aman ke garis tengah */
   }
-  .story__card .label-caps { display: block; margin-bottom: 0.25rem; } /* elemen <time> datetime (lihat index.html) ditata sebagai label kecil emas */
-  .story__card h4 { margin-top: 0.25rem; margin-bottom: 0.5rem; }       /* judul momen (mis. "Pertemuan Pertama") */
-  .story__card p { color: rgba(238, 223, 204, 0.8); }                    /* deskripsi narasi, sedikit lebih redup dari judul */
-  
-  /* Titik/ikon bulat pada garis sumbu (mis. ikon favorite/handshake/
-     ring_volume/church sesuai momen) — lihat <span class="story__node"> di index.html. */
+  .story__card .label-caps { display: block; margin-bottom: 0.25rem; } /* label <time> */
+  .story__card h4 { margin-top: 0.25rem; margin-bottom: 0.5rem; }       /* judul momen */
+  .story__card p { color: rgba(238, 223, 204, 0.8); }                    /* deskripsi narasi */
+
+  /* Titik/ikon bulat di garis sumbu — <span class="story__node"> di index.html */
   .story__node {
     position: absolute;
-    left: 1.5rem;                      /* MOBILE: sejajar persis dengan posisi garis sumbu (lihat .story__timeline::before left:1.5rem) */
+    left: 1.5rem;                      /* mobile: sejajar garis sumbu */
     top: 50%;
-    transform: translate(-50%, -50%);  /* pusatkan titik TEPAT di atas garis (baik horizontal maupun vertikal relatif terhadap posisi left/top) */
+    transform: translate(-50%, -50%);  /* pusatkan titik tepat di garis */
     width: 2rem; height: 2rem;
-    border-radius: var(--radius-full); /* bentuk lingkaran sempurna */
+    border-radius: var(--radius-full);
     background: var(--gold-bright);
     color: var(--sogan-deep);
-    display: flex; align-items: center; justify-content: center; /* pusatkan ikon material-symbols di dalam lingkaran */
-    border: 2px solid var(--sogan-deep); /* border warna gelap -> menciptakan efek "lubang"/jarak visual terhadap garis sumbu emas transparan di belakangnya */
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--sogan-deep); /* efek "lubang" terhadap garis sumbu di belakangnya */
     box-shadow: var(--shadow-standard);
-    z-index: 2; /* di atas garis sumbu (::before, tanpa z-index eksplisit = auto/0) dan di atas kartu */
+    z-index: 2; /* di atas garis sumbu & kartu */
   }
   @media (min-width: 768px) {
-    .story__node { left: 50%; } /* DESKTOP: ikut berpindah ke tengah mengikuti posisi garis sumbu yang baru */
+    .story__node { left: 50%; } /* desktop: ikut ke tengah */
   }
-  
+
   /* --- Story / Timeline: Photo Slot ---
-     Setiap foto momen memakai pola "fallback ikon": <img onerror="this.remove()">
-     akan menghapus dirinya sendiri dari DOM jika file gambar gagal dimuat,
-     sehingga <span class="story__photo-placeholder"> (ikon kamera
-     add_a_photo) di baliknya otomatis terlihat. Ini mencegah ikon "gambar
-     rusak" bawaan browser tampil di undangan. Taruh file foto asli di
-     assets/images/story-pertemuan-N.png untuk menggantikan placeholder. */
+     Pola fallback ikon: <img onerror="this.remove()"> menghapus diri sendiri
+     jika gambar gagal dimuat, sehingga .story__photo-placeholder (ikon
+     kamera) di baliknya otomatis terlihat — mencegah ikon "gambar rusak"
+     bawaan browser. Taruh foto asli di assets/images/story-pertemuan-N.png. */
   .story__photo {
     position: relative;
     width: 100%;
@@ -1517,71 +1420,142 @@
   @media (min-width: 768px) {
     .story__photo { aspect-ratio: 16 / 10; }
   }
-  
-  /* --- Gallery (saat ini TIDAK AKTIF — markup di-comment) ---
-     Grid foto dengan satu item besar (.gallery__item--large) + beberapa
-     item kecil. Setiap tombol galeri memakai atribut
-     data-lightbox-src="URL_FOTO_FULL" yang dibaca oleh script.js ->
-     initGallery()/openLightbox() untuk menampilkan foto penuh di modal
-     lightbox (lihat sub-bagian Lightbox berikutnya). */
-  .gallery__grid {
-    max-width: 72rem;
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-  @media (min-width: 768px) { .gallery__grid { grid-template-columns: repeat(3, 1fr); } }
-  @media (min-width: 1024px) { .gallery__grid { grid-template-columns: repeat(4, 1fr); } }
-  
-  .gallery__item {
+
+  /* --- Gallery Slider (AKTIF — Modul Minggu 6, TP-1 & revisi pembimbing) ---
+     Dulu: grid yang menampilkan SEMUA foto sekaligus (.gallery__grid, dkk).
+     Sekarang: karusel — HANYA SATU FOTO tampil penuh per waktu.
+
+     MEKANISME GESER (tanpa JavaScript library tambahan, jalan di semua
+     device termasuk sentuh/mobile):
+       .gallery-slider__track memakai `overflow-x: auto` +
+       `scroll-snap-type: x mandatory`. Browser menangani swipe/drag secara
+       NATIVE. script.js (initGallerySlider, § 9A) hanya menambahkan:
+         - tombol ‹ › (scrollTo per slide)
+         - titik indikator (dots) yang bisa diklik
+         - dukungan keyboard ←/→ saat slider difokus
+         - sinkronisasi "foto ke berapa" lewat listener 'scroll' (debounced)
+
+     Tiap .gallery-slider__slide berisi <button data-lightbox-src="...">
+     yang membuka modal Lightbox (lihat § Lightbox di bawah) untuk melihat
+     foto itu dalam ukuran penuh + menjelajah foto lain via Prev/Next. */
+  .gallery-slider {
     position: relative;
+    max-width: 28rem; /* nilai dasar, ditimpa per breakpoint di Bagian 14 */
+    width: 100%;
+  }
+
+  .gallery-slider__track {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;     /* tiap slide "mengunci" di tengah saat scroll berhenti */
+    -webkit-overflow-scrolling: touch; /* momentum scroll halus di iOS Safari */
+    scroll-behavior: smooth;
     border-radius: var(--radius-xl);
-    overflow: hidden;
-    border: 1px solid rgba(212, 175, 55, 0.3);
     box-shadow: var(--shadow-standard);
-    height: 18rem;
-    padding: 0;
+    border: 1px solid rgba(212, 175, 55, 0.3);
     background: var(--sogan-card);
+    /* Sembunyikan scrollbar bawaan browser (swipe tetap berfungsi penuh) */
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* IE/Edge lama */
   }
-  .gallery__item--large {
-    height: 24rem;
+  .gallery-slider__track::-webkit-scrollbar { display: none; } /* Chrome/Safari/Edge modern */
+
+  .gallery-slider__slide {
+    flex: 0 0 100%;              /* satu slide = lebar penuh track */
+    scroll-snap-align: center;
+    position: relative;
+    aspect-ratio: 1 / 1;         /* sesuai TP-1 modul: proporsi persegi */
   }
-  @media (min-width: 768px) {
-    .gallery__item--large {
-      grid-column: span 2;
-      grid-row: span 2;
-      height: auto;
-      min-height: 26rem;
-    }
+  .gallery-slider__view-btn {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
   }
-  .gallery__item img {
+  .gallery-slider__img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 700ms;
+    /* Catatan modul (TP-1): gambar idealnya format WebP/AVIF terkompresi.
+       Atribut loading="lazy" dipasang di index.html per elemen <img>. */
   }
-  .gallery__item:hover img { transform: scale(1.05); }
-  .gallery__caption {
+  .gallery-slider__caption {
     position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: flex-end;
-    padding: 1.5rem;
-    background: linear-gradient(to top, var(--sogan-deep), transparent 60%);
-    opacity: 0;
-    transition: opacity 300ms;
-    font-size: 1.25rem;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 1.25rem 1rem 1rem;
+    background: linear-gradient(to top, rgba(26, 15, 7, 0.9), transparent 75%);
+    color: var(--gold-foil);
+    text-align: left;
+    pointer-events: none; /* biar klik tetap jatuh ke tombol foto, bukan caption */
   }
-  .gallery__item:hover .gallery__caption,
-  .gallery__item:focus-visible .gallery__caption { opacity: 1; }
-  
-  /* --- Lightbox ---
-     Modal overlay (#gallery-lightbox) untuk menampilkan 1 foto galeri
-     ukuran penuh. Kelas `.is-open` ditambahkan/dihapus oleh script.js
-     (openLightbox/closeLightbox). Modal ditutup lewat: tombol close,
-     klik area luar gambar, atau tombol Escape (lihat event listener
-     keydown di script.js -> initGallery()). */
+
+  .gallery-slider__nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--radius-full);
+    background: rgba(45, 26, 13, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    backdrop-filter: blur(8px);
+    color: var(--gold-bright);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 200ms, color 200ms, transform 200ms;
+  }
+  .gallery-slider__nav:hover {
+    background: var(--gold-bright);
+    color: var(--sogan-deep);
+  }
+  .gallery-slider__nav--prev { left: 0.6rem; }
+  .gallery-slider__nav--next { right: 0.6rem; }
+
+  .gallery-slider__dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  }
+  .gallery-slider__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: rgba(212, 175, 55, 0.3);
+    transition: width 200ms, background 200ms;
+  }
+  .gallery-slider__dot.is-active {
+    width: 1.5rem;
+    background: var(--gold-bright);
+  }
+
+  /* Status teks untuk pembaca layar ("Foto 2 dari 5") — tersembunyi
+     secara visual tapi tetap terbaca screen reader (pola sr-only). */
+  .gallery-slider__status {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* --- Lightbox --- Modal overlay (#gallery-lightbox) utk 1 foto ukuran
+     penuh, dengan navigasi Prev/Next/Close (Modul TP-2). Class .is-open
+     ditambah/dihapus script.js (openLightbox/closeLightbox).
+     Ditutup via tombol close, klik luar gambar, atau Escape. Navigasi ke
+     foto lain via tombol ‹ ›, atau keyboard ArrowLeft/ArrowRight. */
   .lightbox {
     position: fixed;
     inset: 0;
@@ -1598,6 +1572,7 @@
     position: relative;
     max-width: 56rem;
     max-height: 90vh;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1610,99 +1585,82 @@
     border: none;
     color: var(--jasmine-white);
     transition: color 200ms;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .lightbox__close:hover { color: var(--gold-bright); }
   .lightbox__close .material-symbols-outlined { font-size: 32px; }
   .lightbox__img {
     max-width: 100%;
-    max-height: 85vh;
+    max-height: 78vh;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-standard);
     object-fit: contain;
   }
-  
-  /* --- Video --- */
-  .video-player {
-    max-width: 56rem;
+  .lightbox__caption {
+    margin-top: 0.75rem;
+    color: var(--gold-foil);
+    text-align: center;
+  }
+  /* Tombol Prev/Next: di tengah-kiri & tengah-kanan GAMBAR (bukan seluruh
+     overlay), supaya tetap terjangkau ibu jari di layar sempit tanpa
+     menimpa tombol Close. */
+  .lightbox__nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    background: rgba(45, 26, 13, 0.75);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: var(--radius-full);
+    color: var(--jasmine-white);
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 200ms, color 200ms;
+  }
+  .lightbox__nav:hover {
+    background: var(--gold-bright);
+    color: var(--sogan-deep);
+  }
+  .lightbox__nav--prev { left: 0.5rem; }
+  .lightbox__nav--next { right: 0.5rem; }
+  .lightbox__nav .material-symbols-outlined { font-size: 28px; }
+
+  /* --- Video (AKTIF — Modul Minggu 6, TP-3) ---
+     Dulu: player kustom (poster + tombol play + elemen <video> lokal,
+     class .video-player & turunannya). Sekarang: <iframe> YouTube yang
+     responsif, dibungkus .video-wrapper dengan rasio tetap 16:9 (sesuai
+     modul) agar tidak ada "jumping layout" saat iframe dimuat — penting
+     untuk performa (mencegah Cumulative Layout Shift) & tampil rapi di
+     semua ukuran layar. */
+  .video-wrapper {
     width: 100%;
+    max-width: 50rem;
     aspect-ratio: 16 / 9;
+    margin: 0 auto;
     border-radius: var(--radius-xl);
     overflow: hidden;
     box-shadow: var(--shadow-standard);
+    border: 1px solid rgba(212, 175, 55, 0.3);
     background: var(--sogan-card);
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
-  .video-player__poster {
-    position: absolute;
-    inset: 0;
+  .video-wrapper iframe {
+    display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    opacity: 0.6;
-    transition: transform 700ms;
+    border: 0;
   }
-  .video-player:hover .video-player__poster { transform: scale(1.05); }
-  .video-player__scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, var(--sogan-deep), rgba(26, 15, 7, 0.3), transparent);
-  }
-  .video-player__play {
-    position: relative;
-    z-index: 10;
-    width: 5rem;
-    height: 5rem;
-    border-radius: var(--radius-full);
-    background: var(--gold-bright);
-    color: var(--sogan-deep);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 35px rgba(212, 175, 55, 0.7);
-    border: none;
-    transition: transform 300ms;
-  }
-  .video-player__play:hover { transform: scale(1.1); }
-  .video-player__play .material-symbols-outlined { font-size: 42px; margin-left: 0.25rem; }
-  .video-player__meta {
-    position: absolute;
-    bottom: 1.5rem;
-    left: 1.5rem;
-    right: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: var(--jasmine-white);
-    z-index: 10;
-  }
-  .video-player__meta p { margin-top: 0.25rem; }
-  .video-player__duration {
-    font-size: var(--fs-body-sm);
-    background: rgba(0, 0, 0, 0.6);
-    padding: 0.35rem 1rem;
-    border-radius: var(--radius-full);
-    border: 1px solid rgba(212, 175, 55, 0.3);
-  }
-  .video-player__element {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-  .video-player.is-playing .video-player__poster,
-  .video-player.is-playing .video-player__scrim,
-  .video-player.is-playing .video-player__play,
-  .video-player.is-playing .video-player__meta { display: none; }
-  
-  /* --- Gift / Bank cards (saat ini TIDAK AKTIF — markup di-comment) ---
-     Kartu rekening bank (.bank-card) + kartu alamat pengiriman kado fisik
-     (.address-card). Tombol salin memakai atribut data-copy-value &
-     data-copy-message yang dibaca oleh script.js -> initCopyButtons() /
-     copyToClipboard() (dengan fallback execCommand untuk browser lama). */
+
+  /* --- Gift / Bank cards — NONAKTIF (markup di-comment) ---
+     Kartu rekening (.bank-card) + alamat kado fisik (.address-card). Tombol
+     salin pakai data-copy-value/data-copy-message, dibaca script.js →
+     initCopyButtons()/copyToClipboard(). */
   .gift__grid {
     max-width: 56rem;
     width: 100%;
@@ -1712,7 +1670,7 @@
     margin-bottom: 2rem;
   }
   @media (min-width: 768px) { .gift__grid { grid-template-columns: 1fr 1fr; } }
-  
+
   .bank-card {
     background: var(--sogan-card);
     border: 1px solid rgba(212, 175, 55, 0.3);
@@ -1740,7 +1698,7 @@
   }
   .bank-card p.body-sm { margin-top: 0.25rem; color: rgba(238, 223, 204, 0.8); }
   .bank-card .btn { margin-top: 1.5rem; }
-  
+
   .address-card {
     max-width: 56rem;
     width: 100%;
@@ -1772,17 +1730,13 @@
   .address-card__info p { margin-top: 0.1rem; }
   .address-card__info .body-sm { color: rgba(238, 223, 204, 0.8); }
   .address-card .btn { white-space: nowrap; width: auto; }
-  
-  /* --- RSVP Form (saat ini TIDAK AKTIF — markup di-comment) ---
-     Form konfirmasi kehadiran (#rsvp-form): nama, pilihan hadir/ragu/tidak
-     (.attendance-toggle, radio button custom-styled), jumlah tamu (select),
-     dan ucapan (textarea). Submit ditangani oleh script.js ->
-     handleRsvpSubmit() yang MENCEGAH reload halaman (preventDefault),
-     memvalidasi nama wajib diisi, lalu memanggil addWishCard() untuk
-     menambahkan entri baru ke buku tamu (#wishes-container) — TANPA
-     mengirim data ke server manapun (murni client-side / in-memory,
-     akan hilang saat halaman di-refresh). Untuk persistensi sungguhan,
-     sambungkan handleRsvpSubmit() ke backend/Google Sheets/Firebase, dll. */
+
+  /* --- RSVP Form — NONAKTIF (markup di-comment) ---
+     Form #rsvp-form: nama, hadir/ragu/tidak (.attendance-toggle, radio
+     custom-styled), jumlah tamu, ucapan. Submit ditangani script.js →
+     handleRsvpSubmit(): validasi nama, lalu addWishCard() ke buku tamu —
+     TANPA kirim ke server (in-memory, hilang saat refresh). Untuk
+     persistensi sungguhan, sambungkan ke backend sendiri. */
   .rsvp-form {
     max-width: 42rem;
     width: 100%;
@@ -1820,7 +1774,7 @@
     box-shadow: 0 0 0 1px var(--gold-bright);
   }
   textarea.form-input { resize: vertical; }
-  
+
   .attendance-toggle {
     display: grid;
     grid-template-columns: 1fr;
@@ -1854,21 +1808,18 @@
     color: var(--sogan-deep);
     font-weight: 700;
   }
-  
+
   .rsvp-form__submit {
     width: 100%;
     justify-content: center;
     padding: 1rem;
     margin-top: 0.5rem;
   }
-  
-  /* --- Wishes / Guestbook (saat ini TIDAK AKTIF — markup di-comment) ---
-     Daftar ucapan tamu (.wish-card). Entri baru dari form RSVP disisipkan
-     di PALING ATAS (prepend) oleh script.js -> addWishCard(), lengkap
-     dengan animasi fade+scale-in (lihat inline style di JS yang
-     memanfaatkan requestAnimationFrame untuk trigger transisi CSS). Avatar
-     inisial (.wish-card__avatar) dihasilkan dari 2 huruf pertama nama tamu
-     via getInitials(). */
+
+  /* --- Wishes / Guestbook — NONAKTIF (markup di-comment) ---
+     Daftar ucapan (.wish-card). Entri baru dari RSVP di-prepend script.js
+     → addWishCard(), dengan animasi fade+scale-in. Avatar inisial
+     (.wish-card__avatar) dari getInitials(). */
   .wishes__list {
     max-width: 48rem;
     width: 100%;
@@ -1927,7 +1878,7 @@
     margin-top: 0.5rem;
     color: rgba(212, 175, 55, 0.6);
   }
-  
+
   /* --- Closing --- */
   .closing {
     padding-top: var(--space-2xl);
@@ -1979,7 +1930,7 @@
     font-size: 1.25rem;
   }
   @media (min-width: 640px) { .closing__dua { font-size: 1.5rem; } }
-  
+
   .closing__families {
     width: 100%;
     padding-top: 2rem;
@@ -2014,16 +1965,16 @@
     color: rgba(238, 223, 204, 0.5);
     letter-spacing: 0.25em;
   }
-  
+
   /* ==========================================================================
      8. COMPONENTS — small reusable pieces already covered above
      (buttons, pills, badges, swatches) — see sections 6 & 7
      ========================================================================== */
-  
+
   /* ==========================================================================
      9. FORMS — see RSVP section above
      ========================================================================== */
-  
+
   /* ==========================================================================
      10. ANIMATIONS
      --------------------------------------------------------------------------
@@ -2060,17 +2011,17 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
-  
+
   @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
   }
-  
+
   @keyframes bounce {
     0%, 100% { transform: translateY(-5%); }
     50% { transform: translateY(0); }
   }
-  
+
   /* Global Scroll-Reveal System */
   .reveal-item {
     opacity: 0;                              /* STATE AWAL: tak terlihat sama sekali sebelum diamati JS */
@@ -2097,7 +2048,7 @@
     opacity: 1;
     transform: translateY(0) scale(1); /* kembali ke posisi & ukuran normal/asli */
   }
-  
+
   /* Kelas delay-N TIDAK mengubah DURASI transisi, melainkan KAPAN transisi
      itu MULAI dijalankan setelah class is-revealed ditambahkan (transition-
      delay). Dipasang berjenjang (0, 120, 240, 360, 480ms) pada
@@ -2108,22 +2059,17 @@
   .delay-200 { transition-delay: 240ms; }
   .delay-300 { transition-delay: 360ms; }
   .delay-400 { transition-delay: 480ms; }
-  
+
   /* ==========================================================================
-     11. RESPONSIVE — fine tuning across breakpoints
-     --------------------------------------------------------------------------
-     Catatan: breakpoint UTAMA situs ini (768px = tablet, 1024px/1280px =
-     desktop) sebagian besar sudah didefinisikan INLINE di dalam masing-
-     masing komponen pada Bagian 3–7 (mobile-first: aturan dasar untuk HP,
-     lalu @media (min-width: ...) untuk layar lebih besar). Bagian 11 ini
-     khusus untuk penyesuaian lintas-komponen tambahan yang tidak terikat
-     pada satu komponen tunggal, misalnya lebar maksimum konten di layar
-     sangat lebar (>=1280px, var(--content-max)).
+     11. RESPONSIVE — breakpoint utama (768px tablet, 1024/1280px desktop)
+     sudah inline di tiap komponen (Bagian 3–7, mobile-first). Bagian ini
+     khusus penyesuaian lintas-komponen, mis. lebar maksimum konten di
+     layar sangat lebar (≥1280px, var(--content-max)).
      ========================================================================== */
   @media (max-width: 359px) {
     .section { padding-left: 0.75rem; padding-right: 0.75rem; }
   }
-  
+
   @media (min-width: 1280px) {
     .section-inner,
     .hero__content,
@@ -2131,26 +2077,19 @@
     .events__grid,
     .location__grid,
     .gift__grid,
-    .gallery__grid,
     .story__timeline {
       max-width: var(--content-max);
     }
   }
-  
+
   /* ==========================================================================
      12. ACCESSIBILITY
-     --------------------------------------------------------------------------
-     - `:focus-visible` memastikan outline fokus emas HANYA muncul saat
-       navigasi keyboard (Tab), bukan saat klik mouse — menjaga estetika
-       tanpa mengorbankan aksesibilitas keyboard.
-     - Aturan target sentuh minimum 44px (.btn, .social-chip, dst.) mengikuti
-       rekomendasi WCAG 2.5.5 (Target Size) agar tombol mudah ditekan di
-       layar sentuh kecil.
-     - Lihat juga PDF slide "Aksesibilitas Semantik pada Cover Overlay"
-       (role="dialog", aria-modal, aria-label, aria-haspopup) dan
-       "Aksesibilitas DOM pada Countdown Timer" (aria-live="polite") —
-       atribut-atribut ARIA tsb didefinisikan di index.html, bukan di sini,
-       tapi styling-nya (focus ring, dsb.) ada di bagian ini.
+     - :focus-visible → outline emas hanya muncul saat navigasi keyboard,
+       bukan saat klik mouse.
+     - Target sentuh minimum 44px (.btn, .social-chip, dst.) mengikuti WCAG
+       2.5.5 Target Size.
+     - Atribut ARIA (role="dialog", aria-live, dll.) didefinisikan di
+       index.html — di sini hanya styling-nya (focus ring, dst).
      ========================================================================== */
   a:focus-visible,
   button:focus-visible,
@@ -2160,77 +2099,63 @@
     outline: 2px solid var(--gold-bright);
     outline-offset: 2px;
   }
-  
-  .gallery__item {
-    text-align: left;
-  }
-  
+
   /* Keep interactive targets comfortably tappable */
   .btn,
   .social-chip,
   .attendance-toggle__option,
-  .audio-controller__btn {
+  .audio-controller__btn,
+  .gallery-slider__nav,
+  .gallery-slider__dot,
+  .lightbox__nav {
     min-height: 44px;
   }
-  
+  .gallery-slider__dot { min-height: auto; } /* dot sengaja kecil secara visual; target klik diperluas lewat padding di bawah */
+
   /* ==========================================================================
-     13. REDUCED MOTION
-     --------------------------------------------------------------------------
-     Menghormati preferensi sistem operasi pengguna "Reduce Motion"
-     (Settings > Accessibility). Saat aktif: seluruh animasi .reveal-item
-     langsung ditampilkan penuh tanpa transisi, animasi putar/pulse
-     dihentikan, dan SEMUA transisi/animasi lain di halaman dipercepat
-     menjadi nyaris instan (0.01ms) via selector universal `*`. Ini penting
-     untuk pengguna yang rentan motion sickness/vertigo akibat animasi.
+     13. REDUCED MOTION — menghormati preferensi OS "Reduce Motion". Saat
+     aktif: .reveal-item langsung tampil penuh tanpa transisi, animasi
+     putar/pulse berhenti, semua transisi lain dipercepat nyaris instan.
      ========================================================================== */
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-  
+
     .reveal-item {
       opacity: 1 !important;
       transform: none !important;
       transition: none !important;
     }
-  
+
     .audio-controller__disc,
     .streaming__icon .material-symbols-outlined,
     .map-card__pin {
       animation: none !important;
     }
-  
+
+    /* Slider tetap bisa digeser (functionality tidak dimatikan), hanya
+       animasi smooth-scroll-nya yang dihilangkan — perpindahan jadi instan.
+       Sinkron dengan prefersReducedMotion() di script.js § 9A. */
+    .gallery-slider__track { scroll-behavior: auto; }
+
     * {
       transition-duration: 0.01ms !important;
       animation-duration: 0.01ms !important;
     }
   }
-  
-  /* ==========================================================================
-     14. MOBILE-FIRST REFINEMENTS
-     --------------------------------------------------------------------------
-     Base rules di atas (Bagian 1-13) SUDAH mobile-first secara umum, tapi
-     bagian ini adalah lapisan "polish" tambahan yang ditulis belakangan
-     khusus untuk kasus-kasus tepi (edge case) pada perangkat nyata:
-       - Font fluid tambahan via clamp() pada layar <640px agar judul besar
-         tidak terasa terlalu besar di HP kecil (lihat juga Bagian 1 catatan
-         --fs-*).
-       - Tombol tidak boleh overflow & tidak ada efek :hover "nempel" di
-         perangkat sentuh (karena :hover disimulasikan buruk di touchscreen).
-       - Elemen fixed (audio controller, toast) menghormati notch/home-
-         indicator via env(safe-area-inset-*).
-       - Penyesuaian per-komponen (Hero, Couple, Events, dst.) untuk spacing
-         yang lebih rapat di layar kecil.
-       - Penanganan khusus layar pendek/landscape (mis. HP direbahkan) agar
-         curtain pembuka tetap bisa discroll jika kontennya tidak muat.
-       - Penanganan HP sangat kecil (<=359px, mis. iPhone SE generasi lama).
 
-     PRIORITAS CASCADE: karena bagian ini berada PALING BAWAH file dan
-     banyak selector-nya sama persis dengan yang di atas, aturan di sini
-     akan MENIMPA (override) aturan sejenis di atas pada breakpoint yang
-     sama (spesifisitas selector setara, urutan source menentukan). Jika
-     sebuah gaya mobile tidak sesuai harapan, PERIKSA DI SINI DULU sebelum
-     mengubah Bagian 1-7, karena kemungkinan besar override-nya ada di sini.
+  /* ==========================================================================
+     14. MOBILE-FIRST REFINEMENTS — lapisan polish tambahan utk edge case
+     perangkat nyata: font fluid clamp() <640px, tombol anti-overflow +
+     tanpa :hover nempel di touchscreen, elemen fixed menghormati safe-area,
+     spacing lebih rapat per-komponen, layar pendek/landscape, HP sangat
+     kecil (≤359px).
+
+     PENTING: bagian ini di PALING BAWAH file → selector yang sama dgn di
+     atas akan MENIMPA aturan sebelumnya (urutan source menentukan). Kalau
+     gaya mobile tidak sesuai harapan, CEK DI SINI DULU sebelum ubah
+     Bagian 1-7.
      ========================================================================== */
-  
+
   /* --- Fluid type on very small phones (keeps hierarchy, avoids awkward wraps) --- */
   .display-hero { font-size: clamp(2rem, 10.5vw, 2.4rem); }
   @media (min-width: 640px) { .display-hero { font-size: var(--fs-display-hero); } }
@@ -2242,7 +2167,7 @@
   .label-caps { letter-spacing: 0.12em; }
   @media (min-width: 640px) { .label-caps { letter-spacing: 0.15em; } }
   .section-heading__title { text-wrap: balance; }
-  
+
   /* --- Buttons: never overflow, tap-friendly, no sticky hover on touch --- */
   .btn {
     max-width: 100%;
@@ -2262,11 +2187,11 @@
     .social-chip:hover { background: var(--sogan-dark); color: var(--gold-bright); }
     .audio-controller__btn:hover { background: rgba(45, 26, 13, 0.9); color: var(--gold-bright); transform: none; }
     .couple-card:hover { border-color: rgba(212, 175, 55, 0.25); }
-    .gallery__item:hover img,
-    .video-player:hover .video-player__poster { transform: none; }
+    .gallery-slider__nav:hover,
+    .lightbox__nav:hover { background: rgba(45, 26, 13, 0.85); color: var(--gold-bright); }
   }
   .btn:active { transform: scale(0.97); }
-  
+
   /* --- Floating audio + toast: respect notch / home indicator --- */
   .audio-controller {
     bottom: max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem));
@@ -2281,7 +2206,7 @@
     text-align: left;
   }
   .toast .material-symbols-outlined { flex-shrink: 0; }
-  
+
   /* --- Hero --- */
   .hero {
     min-height: 100vh;
@@ -2297,7 +2222,7 @@
   .hero__cloud { width: clamp(9rem, 44vw, 16rem); }
   @media (min-width: 768px) { .hero__cloud { width: 20rem; } }
   .date-pill { max-width: 100%; text-align: center; padding: 0.55rem 1.1rem; }
-  
+
   /* --- Intro / Doa --- */
   .doa-card { padding: 2.75rem 1.25rem 2.25rem; border-radius: var(--radius-lg); }
   @media (min-width: 400px) { .doa-card { padding: 3rem 1.75rem 2.5rem; border-radius: var(--radius-xl); } }
@@ -2307,7 +2232,7 @@
   @media (min-width: 640px) { .doa-card__arabic { font-size: 2.25rem; } }
   .doa-card__quote { font-size: clamp(0.9rem, 3.9vw, 1rem); line-height: 1.7; }
   @media (min-width: 640px) { .doa-card__quote { font-size: 1.125rem; } }
-  
+
   /* --- Couple: keep the "&" on mobile as a horizontal ornament between cards --- */
   .couple__grid { gap: 1.25rem; }
   .couple__connector {
@@ -2338,7 +2263,7 @@
   .couple-card__photo { width: min(14rem, 68vw); height: auto; aspect-ratio: 7 / 9; }
   @media (min-width: 640px) { .couple-card__photo { width: 16rem; aspect-ratio: 4 / 5; } }
   .couple-card__name { overflow-wrap: anywhere; }
-  
+
   /* --- Cards: lighter padding on small phones --- */
   .event-card,
   .rules-card,
@@ -2352,7 +2277,7 @@
   }
   .events__grid, .location__grid, .gift__grid { gap: 1.25rem; }
   @media (min-width: 768px) { .events__grid, .location__grid, .gift__grid { gap: 2rem; } }
-  
+
   /* --- Events --- */
   .event-card__head { margin-bottom: 1.25rem; gap: 0.75rem; }
   .event-card__tag { padding: 0.3rem 0.85rem; text-align: center; }
@@ -2360,7 +2285,7 @@
   .event-card__meta-row .label-md { overflow-wrap: anywhere; }
   .event-card__dresscode-row { align-items: flex-start; }
   .swatches { flex-shrink: 0; padding-top: 0.2rem; }
-  
+
   /* --- Location --- */
   .map-card { padding: 0.75rem; border-radius: var(--radius-lg); }
   @media (min-width: 400px) { .map-card { padding: 1rem; border-radius: var(--radius-xl); } }
@@ -2370,13 +2295,13 @@
   .map-card__overlay .btn { width: 100%; max-width: 18rem; margin-top: 1rem; }
   .map-card__pin { width: 3rem; height: 3rem; }
   .map-card__footer { padding: 0.9rem 0.25rem 0.25rem; line-height: 1.5; }
-  
+
   /* --- Streaming --- */
   .streaming__card { padding: 1.5rem 1.25rem; border-radius: var(--radius-lg); }
   @media (min-width: 640px) { .streaming__card { padding: 2rem; border-radius: var(--radius-xl); } }
   .streaming__card .btn { width: 100%; max-width: 20rem; }
   @media (min-width: 768px) { .streaming__card .btn { width: auto; } }
-  
+
   /* --- Story / Timeline: tighter rail on phones --- */
   .story__timeline { padding-left: 2.75rem; gap: 1.75rem; }
   .story__timeline::before { left: 1rem; }
@@ -2394,26 +2319,35 @@
   @media (max-width: 374px) {
     .story__photo { aspect-ratio: 1 / 1; }
   }
-  
-  /* --- Gallery: 2 columns on phones (large photo spans both), captions visible on touch --- */
-  .gallery__grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
-  .gallery__item { height: 12.5rem; border-radius: var(--radius-lg); }
-  .gallery__item--large { grid-column: 1 / -1; height: 20rem; }
+
+  /* --- Gallery Slider: ukuran & posisi tombol disesuaikan per breakpoint ---
+     Revisi: di layar lebar (tablet/desktop), slider DIBATASI tidak ikut
+     melebar penuh — kalau dibiarkan melebar, karena slide persegi
+     (aspect-ratio 1/1) tingginya ikut membesar proporsional dan jadi
+     terasa "kepanjangan" secara vertikal. Jadi max-width di breakpoint
+     besar sengaja DIKECILKAN (bukan dibesarkan seperti pola section lain)
+     supaya kartu tetap kompak & sejajar rata dengan section lain. */
+  .gallery-slider { max-width: 22rem; }
+  .gallery-slider__nav { width: 2.5rem; height: 2.5rem; }
+  .gallery-slider__nav .material-symbols-outlined { font-size: 22px; }
+  .gallery-slider__caption { padding: 1rem 0.85rem 0.85rem; font-size: var(--fs-body-sm); }
+  @media (min-width: 480px) {
+    .gallery-slider { max-width: 24rem; }
+  }
   @media (min-width: 640px) {
-    .gallery__grid { gap: 1.5rem; }
-    .gallery__item { height: 18rem; border-radius: var(--radius-xl); }
+    .gallery-slider { max-width: 26rem; }
+    .gallery-slider__nav { width: 2.75rem; height: 2.75rem; }
+    .gallery-slider__nav .material-symbols-outlined { font-size: 24px; }
   }
-  @media (min-width: 768px) {
-    .gallery__grid { grid-template-columns: repeat(3, 1fr); }
-    .gallery__item--large { grid-column: span 2; grid-row: span 2; height: auto; min-height: 26rem; }
+  @media (min-width: 1024px) {
+    /* Desktop: dikunci di ukuran persegi yang kompak (28rem ≈ 448px),
+       bukan melebar mengikuti lebar section (konten lain max-width-nya
+       jauh lebih besar, ~56-64rem) — supaya galeri tidak terlihat
+       memanjang ke bawah dan tetap rata terhadap elemen lain. */
+    .gallery-slider { max-width: 28rem; }
   }
-  @media (min-width: 1024px) { .gallery__grid { grid-template-columns: repeat(4, 1fr); } }
-  .gallery__caption { padding: 1rem; font-size: 1.05rem; line-height: 1.3; }
-  @media (hover: none) {
-    .gallery__caption { opacity: 1; background: linear-gradient(to top, rgba(26, 15, 7, 0.92), transparent 55%); }
-  }
-  
-  /* --- Lightbox: close button stays on-screen on phones --- */
+
+  /* --- Lightbox: close & nav buttons stay on-screen on phones --- */
   .lightbox { padding: max(1rem, env(safe-area-inset-top, 0px)) 1rem max(1rem, env(safe-area-inset-bottom, 0px)); }
   .lightbox__inner { width: 100%; max-height: 100%; }
   .lightbox__close {
@@ -2424,25 +2358,19 @@
     align-items: center;
     justify-content: center;
   }
-  .lightbox__img { max-height: 78vh; }
-  @supports (height: 100dvh) { .lightbox__img { max-height: 78dvh; } }
-  
-  /* --- Video --- */
-  .video-player { border-radius: var(--radius-lg); }
-  @media (min-width: 640px) { .video-player { border-radius: var(--radius-xl); } }
-  .video-player__play { width: 4rem; height: 4rem; }
-  .video-player__play .material-symbols-outlined { font-size: 36px; }
+  .lightbox__img { max-height: 70vh; }
+  @supports (height: 100dvh) { .lightbox__img { max-height: 70dvh; } }
+  .lightbox__nav { width: 2.5rem; height: 2.5rem; }
+  .lightbox__nav .material-symbols-outlined { font-size: 24px; }
   @media (min-width: 640px) {
-    .video-player__play { width: 5rem; height: 5rem; }
-    .video-player__play .material-symbols-outlined { font-size: 42px; }
+    .lightbox__nav { width: 2.75rem; height: 2.75rem; }
+    .lightbox__nav .material-symbols-outlined { font-size: 28px; }
   }
-  .video-player__meta { bottom: 0.9rem; left: 1rem; right: 1rem; gap: 0.75rem; }
-  @media (min-width: 640px) { .video-player__meta { bottom: 1.5rem; left: 1.5rem; right: 1.5rem; } }
-  .video-player__meta > div { min-width: 0; }
-  .video-player__meta .headline-sm { font-size: 0.95rem; }
-  @media (min-width: 640px) { .video-player__meta .headline-sm { font-size: var(--fs-headline-sm); } }
-  .video-player__duration { flex-shrink: 0; padding: 0.25rem 0.75rem; }
-  
+
+  /* --- Video: keep the 16:9 wrapper comfortable on narrow phones --- */
+  .video-wrapper { border-radius: var(--radius-lg); }
+  @media (min-width: 640px) { .video-wrapper { border-radius: var(--radius-xl); } }
+
   /* --- Gift --- */
   .bank-card__number { font-size: clamp(1.25rem, 6.4vw, 1.625rem); overflow-wrap: anywhere; }
   .address-card { padding: 1.5rem 1.25rem; border-radius: var(--radius-lg); }
@@ -2450,7 +2378,7 @@
   .address-card__info { min-width: 0; }
   .address-card .btn { width: 100%; white-space: normal; }
   @media (min-width: 640px) { .address-card .btn { width: auto; white-space: nowrap; } }
-  
+
   /* --- RSVP form: 16px inputs stop iOS from zooming, comfy tap targets --- */
   .form-input { font-size: 1rem; padding: 0.8rem 1rem; min-height: 48px; }
   @media (min-width: 640px) { .form-input { font-size: var(--fs-body-sm); } }
@@ -2461,14 +2389,14 @@
   @media (min-width: 400px) { .attendance-toggle__option { font-size: var(--fs-body-sm); letter-spacing: 0.05em; padding: 0.75rem; } }
   @media (min-width: 640px) { .attendance-toggle { gap: 0.75rem; } }
   .attendance-toggle__option:has(input:focus-visible) { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
-  
+
   /* --- Wishes --- */
   .wishes__list { max-height: min(30rem, 70vh); padding-right: 0.25rem; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
   .wish-card { padding: 1rem; }
   @media (min-width: 400px) { .wish-card { padding: 1.25rem; } }
   .wish-card__who { min-width: 0; }
   .wish-card__who .label-md { overflow-wrap: anywhere; }
-  
+
   /* --- Closing --- */
   .closing { padding-bottom: max(calc(var(--space-2xl) + 1rem), calc(env(safe-area-inset-bottom, 0px) + 5rem)); }
   .closing__emblem { width: clamp(5rem, 26vw, 6rem); }
@@ -2482,7 +2410,7 @@
   .closing__signature { margin-top: 2.5rem; }
   @media (min-width: 640px) { .closing__signature { margin-top: 4rem; } }
   .closing__bg img { height: 70%; }
-  
+
   /* --- Short / landscape phones: curtain stays usable and scrollable --- */
   @media (max-height: 520px) and (orientation: landscape) {
     .curtain { align-items: flex-start; overflow-y: auto; }
@@ -2497,20 +2425,21 @@
     .curtain__wayang img { max-height: 90%; }
     .hero { min-height: auto; }
   }
-  
+
   /* --- Extra-small phones (≤ 359px) --- */
   @media (max-width: 359px) {
     .btn { font-size: 0.75rem; }
     .curtain__content { padding-left: 0.75rem; padding-right: 0.75rem; }
     .date-pill { font-size: 0.75rem; }
     .map-card__footer { font-size: 0.75rem; }
+    .gallery-slider { max-width: 100%; }
   }
-  
+
   /* Sections whose content is still commented out leave no dead gap on screen;
      they reappear automatically as soon as real content is added. */
   .section:not(:has(*)) { display: none; }
-  
-  
+
+
   /* Pembaruan revisi pembimbing: Google Maps embed tanpa overlay yang menutupi peta. */
   .map-card__frame {
     position: relative;
@@ -2552,7 +2481,7 @@
     outline-offset: 3px;
     border-radius: 0.25rem;
   }
-  
+
   /* Icons never squash when neighbouring text wraps on narrow screens */
   .material-symbols-outlined { flex-shrink: 0; }
 

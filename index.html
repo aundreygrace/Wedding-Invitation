@@ -1,44 +1,37 @@
 <!--
+  UNDANGAN PERNIKAHAN DIGITAL — "Royal Javanese Elegance" (Arya & Sekar)
   ============================================================================
-  PANDUAN UNTUK DEVELOPER (FILE-LEVEL OVERVIEW)
-  ============================================================================
-  Undangan Pernikahan Digital — Template "Royal Javanese Elegance".
-  File ini adalah MARKUP (struktur), sedangkan seluruh TAMPILAN diatur di
-  css/style.css dan seluruh PERILAKU/INTERAKSI diatur di js/script.js.
-  Ketiganya saling bergantung lewat ID/kelas yang sama — lihat catatan
-  "Dependensi CSS/JS" pada tiap section di bawah ini sebelum mengubah id
-  atau class agar fitur terkait tidak rusak.
+  index.html  = struktur/markup
+  css/style.css = tampilan
+  js/script.js  = interaksi & logika
+  Ketiganya saling terhubung lewat id/class yang sama → jangan ganti id/class
+  tanpa cek pemakaiannya di CSS & JS.
 
-  URUTAN RENDER HALAMAN (top -> bottom):
-    1. <div class="curtain">      -> overlay sampul pembuka full-screen
-                                      (lihat PDF: Arsitektur Opening Envelope)
-    2. <aside class="audio-controller"> -> tombol musik mengambang (fixed)
-    3. <div class="toast">        -> notifikasi mengambang (tersembunyi default)
-    4. <main class="site-main">   -> SELURUH section konten, urutan sesuai
-                                      urutan scroll yang akan dilihat tamu:
-         hero -> intro-doa -> couple -> quote(nonaktif) -> countdown ->
-         events -> location -> streaming(nonaktif) -> story(timeline) ->
-         gallery(nonaktif)+lightbox -> video(nonaktif) -> gift(nonaktif) ->
-         rsvp(nonaktif) -> wishes(nonaktif) -> closing(footer)
+  URUTAN HALAMAN (top → bottom):
+    curtain → audio-controller → toast → main
+      → hero → intro-doa → couple → quote* → countdown → events → location
+      → streaming* → story → gallery (slider, AKTIF) + lightbox → video (AKTIF)
+      → gift* → rsvp* → wishes* → closing
+    (*) section NONAKTIF — dibungkus komentar HTML, tapi CSS & JS-nya tetap
+        lengkap. Aktifkan dengan menghapus tag komentar pembungkusnya.
 
-  CATATAN PENTING — SECTION YANG DINONAKTIFKAN SEMENTARA:
-  Beberapa section (Quote, Streaming, Gallery, Video, Gift, RSVP, Wishes)
-  saat ini dibungkus KOMENTAR HTML [ ... ] sehingga tidak tampil di
-  halaman, TAPI CSS-nya (style.css) dan JS-nya (script.js, via fungsi
-  initXxx() dengan guard clause null-check) tetap lengkap & siap pakai.
-  Untuk MENGAKTIFKAN kembali sebuah section: cukup hapus tag pembungkus komentar
-  yang membungkusnya di bawah — tidak perlu mengubah CSS/JS sama sekali.
+  REVISI MODUL MINGGU 6 (Galeri Foto Interaktif & Sematan Video):
+    - #gallery & #video sekarang AKTIF (dulu nonaktif/di-comment).
+    - #gallery TIDAK lagi berupa grid semua foto sekaligus — sesuai revisi
+      pembimbing, sekarang berupa SLIDER/KARUSEL (1 foto penuh per waktu,
+      geser dgn tombol/swipe/keyboard). Lihat komentar di section [13].
+    - Lightbox (modal pembesar foto) ditambah tombol Prev/Next, bukan cuma
+      Close, sesuai modul TP-2. Lihat section [13b].
+    - #video memakai <iframe> YouTube responsif (TP-3), bukan player video
+      lokal custom lagi. Lihat section [14].
 
-  CARA MENGGANTI TEMPLATE UNTUK PASANGAN LAIN:
-    1. Ganti SEMUA data tanggal/jadwal di js/script.js -> objek `weddingData`
-       (bagian 1) TERLEBIH DAHULU — ini sumber kebenaran untuk logika
-       countdown & link kalender.
-    2. Ganti teks nama, tanggal, lokasi yang DI-HARDCODE langsung di file
-       HTML ini (nama mempelai, info orang tua, jadwal acara, dresscode,
-       nomor rekening, dsb.) — saat ini SEBAGIAN BESAR teks statis dan
-       tidak otomatis mengikuti weddingData di script.js.
-    3. Ganti file gambar di assets/images/ & assets/ornaments/ (nama file
-       tetap sama agar tidak perlu mengubah atribut src).
+  GANTI TEMPLATE UNTUK PASANGAN LAIN:
+    1. js/script.js → objek `weddingData` (tanggal & jadwal — sumber utama
+       untuk countdown & link kalender, update ini DULUAN)
+    2. Teks nama/tanggal/lokasi yang di-hardcode di HTML ini (sebagian besar
+       belum otomatis mengikuti weddingData)
+    3. Gambar di assets/images/ & assets/ornaments/ (pakai nama file sama
+       biar src tidak perlu diubah)
   ============================================================================
 -->
 <!DOCTYPE html>
@@ -60,44 +53,28 @@
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body class="is-locked">
-<!-- CATATAN: class "is-locked" di sini hanya penanda/dokumentasi di markup
-     awal — penguncian scroll SEBENARNYA dikendalikan oleh CSS default
-     `body { overflow-y: hidden }` (lihat style.css Bagian 2 RESET/BASE).
-     Pembukaannya terjadi saat script.js menambahkan class `is-unlocked`
-     (BUKAN menghapus `is-locked`) — lihat script.js -> initOpeningCurtain(). -->
+<!-- "is-locked" di sini cuma penanda awal. Kunci-scroll sebenarnya dari CSS
+     default body{overflow-y:hidden}. Dibuka saat JS menambah class
+     "is-unlocked" (bukan menghapus is-locked) → lihat initOpeningCurtain(). -->
 
-<!-- ==========================================
-     01 — THEATRICAL OPENING CURTAIN
-     ==========================================
-     Overlay full-screen (fixed, z-index tertinggi) yang menutupi seluruh
-     halaman sampai tombol #btn-open-invitation diklik.
-     Dependensi CSS : style.css Bagian 5 "OPENING CURTAIN" (.curtain, .curtain__*)
-     Dependensi JS  : script.js -> initGuestName(), initOpeningCurtain()
-     Elemen kunci:
-       - #invitation-guest-name : diisi otomatis oleh initGuestName() dari
-         parameter URL ?to= atau ?u= (lihat script.js bagian 4).
-       - #btn-open-invitation   : memicu seluruh urutan animasi penutupan
-         curtain + membuka scroll body (lihat script.js -> initOpeningCurtain()
-         untuk timeline animasi lengkap: t=0/500/1200ms).
-       - #curtain-wayang-left/right, #curtain-center-content, #curtain-gunungan :
-         elemen dekoratif yang ikut dianimasikan saat tombol diklik (lihat
-         inline style yang DITULIS LANGSUNG oleh JS, bukan hanya toggle class).
-     ========================================== -->
+<!-- [01] CURTAIN PEMBUKA (Theatrical Opening)
+     Overlay full-screen yang menutup halaman sampai tombol dibuka.
+     CSS : style.css § OPENING CURTAIN (.curtain, .curtain__*)
+     JS  : initGuestName(), initOpeningCurtain()
+     Id penting (jangan ganti tanpa update js → objek `dom`):
+       #invitation-guest-name  nama tamu, diisi dari query ?to=/?u=
+       #btn-open-invitation    trigger animasi buka + unlock scroll
+-->
 <div class="curtain" id="theatrical-curtain">
-  <!-- Lapisan gambar dekoratif latar (pendopo + awan). aria-hidden="true"
-       pada container karena murni dekorasi visual, TIDAK ADA informasi
-       penting di sini untuk pembaca layar (lihat juga alt="" kosong pada
-       tiap <img> di bawah — praktik standar utk gambar dekoratif). -->
+  <!-- Dekorasi latar (pendopo + awan), murni visual → aria-hidden + alt="" -->
   <div class="curtain__atmosphere" aria-hidden="true">
-    <img class="curtain__pendopo-glow" src="assets/ornaments/04_pendopo.png" alt="" /> <!-- siluet bangunan pendopo Jawa, pusat perhatian latar -->
-    <img class="curtain__cloud curtain__cloud--left" src="assets/ornaments/05_cloud-back.png" alt="" />  <!-- motif awan kiri -->
-    <img class="curtain__cloud curtain__cloud--right" src="assets/ornaments/06_cloud-front.png" alt="" /> <!-- motif awan kanan -->
+    <img class="curtain__pendopo-glow" src="assets/ornaments/04_pendopo.png" alt="" />
+    <img class="curtain__cloud curtain__cloud--left" src="assets/ornaments/05_cloud-back.png" alt="" />
+    <img class="curtain__cloud curtain__cloud--right" src="assets/ornaments/06_cloud-front.png" alt="" />
   </div>
 
-  <!-- Figur wayang kiri & kanan. id DIBUTUHKAN script.js (dom.wayangLeft/
-       wayangRight) untuk dianimasikan keluar layar saat tombol "Buka
-       Undangan" diklik (lihat initOpeningCurtain() di script.js). JANGAN
-       ganti id ini tanpa menyesuaikan script.js -> objek `dom`. -->
+  <!-- Figur wayang kiri/kanan. id dipakai JS (dom.wayangLeft/Right) untuk
+       animasi keluar layar saat tombol "Buka Undangan" diklik. -->
   <div class="curtain__wayang curtain__wayang--left" id="curtain-wayang-left" aria-hidden="true">
     <img src="assets/ornaments/01_wayang-left.png" alt="" />
   </div>
@@ -105,52 +82,40 @@
     <img src="assets/ornaments/02_wayang-right.png" alt="" />
   </div>
 
-  <!-- Konten tengah curtain: judul, nama tamu personalisasi, tombol buka.
-       id="curtain-center-content" dipakai script.js (dom.curtainContent)
-       untuk memudarkan+mengecilkan blok ini saat tombol diklik (tahap 1
-       animasi, t=0ms — lihat initOpeningCurtain()). -->
+  <!-- Konten tengah: judul, sapaan tamu, tombol buka.
+       id="curtain-center-content" → dipakai JS utk animasi fade saat diklik. -->
   <div class="curtain__content" id="curtain-center-content">
     <div class="curtain__gunungan-wrap">
-      <img class="curtain__gunungan" id="curtain-gunungan" src="assets/ornaments/03_gunungan.png" alt="Gunungan Wayang" /> <!-- simbol gunungan wayang, alt text diisi (BUKAN kosong) karena cukup bermakna sebagai elemen identitas budaya, bukan sekadar dekorasi -->
+      <img class="curtain__gunungan" id="curtain-gunungan" src="assets/ornaments/03_gunungan.png" alt="Gunungan Wayang" />
     </div>
     <span class="label-caps curtain__eyebrow">Undangan Pernikahan</span>
-    <h1 class="display-hero curtain__title">Arya &amp; Sekar</h1> <!-- &amp; = entity HTML untuk karakter "&" (wajib di-escape dalam markup) -->
+    <h1 class="display-hero curtain__title">Arya &amp; Sekar</h1>
     <p class="title-script curtain__subtitle">Arya Wicaksana &amp; Sekar Arum</p>
 
-    <!-- Kartu "pill" sapaan personal untuk tamu. -->
+    <!-- Kartu sapaan personal tamu -->
     <div class="guest-pill">
       <p class="label-caps guest-pill__label">Kepada Yth. Bapak/Ibu/Saudara/i:</p>
-      <!-- id="invitation-guest-name": teks di dalam <h3> ini DIGANTI OTOMATIS
-           oleh script.js -> initGuestName() jika URL mengandung parameter
-           ?to= atau ?u= (mis. dibagikan sbg link personal per tamu). Teks
-           "Tamu Undangan" di bawah adalah fallback default jika parameter
-           URL tidak ada. -->
+      <!-- Teks di #invitation-guest-name diganti otomatis oleh
+           initGuestName() jika URL punya ?to= atau ?u=. "Tamu Undangan" =
+           fallback default. -->
       <h3 class="headline-sm guest-pill__name" id="invitation-guest-name">Tamu Undangan</h3>
       <p class="body-sm guest-pill__note">Dengan hormat, kami memohon doa dan restu untuk pernikahan kami.</p>
     </div>
 
-    <!-- Tombol utama pembuka undangan. id WAJIB "btn-open-invitation" agar
-         terbaca oleh script.js -> initOpeningCurtain() (dom.btnOpen). -->
-    <button class="btn btn--gold curtain__open-btn" id="btn-open-invitation" type="button"> <!-- type="button" eksplisit agar TIDAK dianggap submit button jika suatu saat elemen ini dipindah ke dalam <form> -->
+    <!-- id="btn-open-invitation" WAJIB sama persis — dibaca initOpeningCurtain() -->
+    <button class="btn btn--gold curtain__open-btn" id="btn-open-invitation" type="button">
       <span>Buka Undangan</span>
     </button>
   </div>
 </div>
 
-<!-- ==========================================
-     02 — FLOATING MUSIC CONTROLLER
-     ==========================================
-     Tombol mengambang (fixed, pojok kanan bawah) untuk memutar/menghentikan
-     musik gamelan latar.
-     Dependensi CSS : style.css -> ".audio-controller", ".audio-controller__*"
-     Dependensi JS  : script.js -> initAudioController(), attemptAutoplayAudio(),
-                       updateAudioButtonState()
-     CATATAN: tag <audio id="gamelan-audio"> di bawah SAAT INI DI-COMMENT.
-     Untuk mengaktifkan musik latar: (1) sediakan file audio di
-     "assets/audio/Kebo Giro.mp3", (2) hapus tanda komentar pembungkus pada
-     tag <audio> di bawah ini. Tanpa langkah ini, tombol tetap tampil tapi
-     tidak melakukan apa-apa (dom.audioEl bernilai null di script.js,
-     sehingga initAudioController() keluar lebih awal via guard clause). -->
+<!-- [02] TOMBOL MUSIK MENGAMBANG (Audio Controller)
+     Tombol fixed pojok kanan-bawah utk play/stop musik gamelan.
+     CSS : style.css § .audio-controller
+     JS  : initAudioController(), attemptAutoplayAudio(), updateAudioButtonState()
+     NONAKTIF: tag <audio> di bawah di-comment. Untuk aktifkan: (1) taruh file
+     di assets/audio/Kebo Giro.mp3, (2) hapus komentar pembungkus <audio>.
+     Tanpa ini tombol tetap tampil tapi tidak berfungsi (dom.audioEl = null). -->
 <aside class="audio-controller" aria-label="Pemutar Musik Gamelan">
   <button class="audio-controller__btn" id="audio-controller-btn" type="button" aria-label="Putar atau Hentikan Gamelan Musik Pengiring" aria-pressed="false">
     <span class="audio-controller__disc">
@@ -164,48 +129,26 @@
   <!-- <audio id="gamelan-audio" src="assets/audio/Kebo Giro.mp3" loop preload="none"></audio> -->
 </aside>
 
-<!-- ==========================================
-     03 — TOAST NOTIFICATION
-     ==========================================
-     Notifikasi mengambang (fixed, atas-tengah), tersembunyi default
-     (display:none via CSS), dimunculkan sesaat lewat JS saat ada aksi
-     berhasil (mis. salin nomor rekening, kirim RSVP).
-     Dependensi CSS : style.css -> ".toast", ".toast.is-visible"
-     Dependensi JS  : script.js -> showToast(message) — dipanggil dari
-                       copyToClipboard() & handleRsvpSubmit().
-     `role="status" aria-live="polite"` memastikan pembaca layar
-     mengumumkan isi toast tanpa mengganggu alur baca pengguna. -->
+<!-- [03] TOAST NOTIFICATION
+     Notifikasi mengambang (atas-tengah), default hidden, muncul sesaat saat
+     aksi berhasil (salin rekening, kirim RSVP).
+     CSS : style.css § .toast
+     JS  : showToast(message) — dipanggil dari copyToClipboard() & handleRsvpSubmit() -->
 <div class="toast" id="toast-notification" role="status" aria-live="polite">
   <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
   <span id="toast-message">Nomor rekening berhasil disalin!</span>
 </div>
 
-<!-- ==========================================
-     MAIN SCROLLING CONTENT — ZERO NAVIGATION
-     ==========================================
-     Desain undangan ini SENGAJA TIDAK memakai navbar/menu navigasi —
-     seluruh konten dibaca berurutan lewat scroll linear dari atas ke
-     bawah ("storytelling scroll"), mengikuti alur: perkenalan -> doa ->
-     profil mempelai -> hitung mundur -> acara -> lokasi -> kisah cinta ->
-     galeri -> konfirmasi kehadiran -> penutup.
-     Setiap <section> langsung di bawah <main> WAJIB memakai class dasar
-     "section" (lihat style.css Bagian 4 GLOBAL LAYOUT) ditambah satu
-     class unik per-section (mis. "hero", "couple") untuk styling spesifik
-     di style.css Bagian 7 WEDDING SECTIONS.
-     ========================================== -->
+<!-- ======================= KONTEN UTAMA — TANPA NAVBAR =======================
+     Semua konten dibaca linear lewat scroll (storytelling scroll), tidak ada
+     menu navigasi. Tiap <section> langsung di bawah <main> WAJIB pakai class
+     dasar "section" + 1 class unik per-section (styling di style.css § WEDDING SECTIONS).
+     ============================================================================ -->
 <main class="site-main">
 
-  <!-- ==========================================
-       04 — HERO SECTION (Sampul Ageng)
-       ==========================================
-       Section PERTAMA yang terlihat tamu setelah curtain dibuka: nama
-       mempelai, subjudul, dan tanggal acara.
-       Dependensi CSS : style.css -> "--- Hero ---" (di dalam Bagian 7)
-       Dependensi JS  : TIDAK ADA logika JS khusus — section statis murni,
-                         kecuali kelas umum "reveal-item" (lihat animasi
-                         scroll-reveal di style.css Bagian 10 / script.js
-                         Bagian 5 initScrollReveal()).
-       ========================================== -->
+  <!-- [04] HERO — Sampul Ageng
+       Section pertama setelah curtain dibuka: nama mempelai & tanggal acara.
+       CSS : style.css § Hero | JS : tidak ada (statis, cuma reveal-item) -->
   <section class="section hero" id="hero">
     <div class="hero__bg" aria-hidden="true">
       <img class="hero__pendopo" src="assets/ornaments/04_pendopo.png" alt="" />
@@ -234,16 +177,10 @@
     </div> -->
   </section>
 
-  <!-- ==========================================
-       05 — WEDDING INTRODUCTION & DOA (QS. Ar-Rum:21)
-       ==========================================
-       Kartu kutipan ayat Al-Qur'an sebagai pembuka makna pernikahan.
-       Dependensi CSS : style.css -> "--- Intro / Doa ---"
-       Dependensi JS  : tidak ada (statis, hanya reveal-item untuk animasi).
-       UNTUK MENGUBAH TEKS: edit langsung <span class="doa-card__arabic">,
-       <span class="doa-card__ref"> (referensi ayat), dan
-       <blockquote class="doa-card__quote"> (terjemahan) di bawah.
-       ========================================== -->
+  <!-- [05] INTRO & DOA — QS. Ar-Rum:21
+       Kartu kutipan ayat pembuka makna pernikahan.
+       CSS : style.css § Intro / Doa | JS : tidak ada
+       Edit teks langsung di .doa-card__arabic, .doa-card__ref, .doa-card__quote -->
   <section class="section intro-doa" id="intro-doa">
     <article class="reveal-item delay-0 doa-card">
       <img class="doa-card__corner doa-card__corner--tl" src="assets/ornaments/07_ornament-corner.png" alt="" aria-hidden="true" />
@@ -260,21 +197,12 @@
     </article>
   </section>
 
-  <!-- ==========================================
-       06 — BRIDE & GROOM (Sang Mempelai)
-       ==========================================
-       Dua kartu profil (.couple-card) untuk mempelai pria & wanita,
-       dipisahkan simbol "&" (.couple__connector) di tengah.
-       Dependensi CSS : style.css -> "--- Couple ---" (grid 2 kolom desktop,
-                         stack vertikal di mobile — lihat juga Bagian 14
-                         catatan "Couple: keep the '&' on mobile...").
-       Dependensi JS  : tidak ada logika khusus (link Instagram adalah
-                         <a href> statis).
-       UNTUK MENAMBAH/MENGUBAH DATA MEMPELAI: edit <h3 class="couple-card__name">,
-       <p class="couple-card__parents"> (nama orang tua), <img src=...> foto
-       profil (assets/images/Pria.png & Wanita.png), dan link
-       <a class="social-chip" href="..."> Instagram.
-       ========================================== -->
+  <!-- [06] MEMPELAI (Couple)
+       Dua kartu profil mempelai, dipisah simbol "&" di tengah.
+       CSS : style.css § Couple (grid 2 kolom desktop, stack di mobile)
+       JS  : tidak ada (link Instagram statis)
+       Edit nama/ortu di .couple-card__name / .couple-card__parents, foto di
+       assets/images/Pria.png & Wanita.png, link di .social-chip -->
   <section class="section couple" id="couple">
     <div class="reveal-item delay-0 section-heading">
       <span class="label-caps section-heading__eyebrow">Pinanganten Sarimbit</span>
@@ -323,7 +251,7 @@
     </div>
   </section>
 
-  <!-- 05 — WEDDING QUOTE / FILOSOFI JAWA -->
+  <!-- [07] QUOTE / FILOSOFI JAWA — NONAKTIF -->
   <!-- <section class="section quote" id="quote">
     <div class="reveal-item delay-0 quote__content">
       <span class="label-caps quote__eyebrow">Piwulang Luhur</span>
@@ -336,24 +264,17 @@
     </div>
   </section> -->
 
-  <!-- ==========================================
-       07 — COUNTDOWN SECTION (Ngetang Dinten)
-       ==========================================
-       Hitung mundur real-time menuju Akad Nikah, dengan 3 fase (lihat PDF:
-       "Kalkulasi Waktu" & "Aksesibilitas DOM pada Countdown Timer").
-       Dependensi CSS : style.css -> "--- Countdown ---" (fixed-width boxes +
-                         tabular-nums untuk Zero CLS)
-       Dependensi JS  : script.js Bagian 6 -> initCountdown(), updateCountdown(),
-                         showCountdownTimer(), showCountdownMessage()
-       Elemen kunci (JANGAN UBAH ID-nya tanpa menyesuaikan script.js -> objek `dom`):
-         #countdown-timer  (role="timer" aria-live="polite") -> grid 4 kotak
-         #timer-days / #timer-hours / #timer-minutes / #timer-seconds -> angka
-         #countdown-message (aria-live="polite", default hidden) -> pesan
-           doa/terima kasih yang menggantikan grid angka pada fase "doa"/"thanks"
-       SUMBER WAKTU TARGET: BUKAN di file HTML ini — diatur di
-       js/script.js -> weddingData.date.targetISO & .thankYouISO. Mengubah
-       tanggal di sini TIDAK CUKUP; harus diubah di script.js juga.
-       ========================================== -->
+  <!-- [08] COUNTDOWN — Ngetang Dinten
+       Hitung mundur real-time ke Akad Nikah, punya 3 fase (hitung/doa/thanks).
+       CSS : style.css § Countdown | JS : initCountdown(), updateCountdown(),
+             showCountdownTimer(), showCountdownMessage()
+       Id penting (jangan ganti tanpa update js → objek `dom`):
+         #countdown-timer                           grid 4 kotak angka
+         #timer-days/hours/minutes/seconds           isi angka
+         #countdown-message                          pesan doa/terima kasih,
+                                                       menggantikan grid saat fase berubah
+       PENTING: tanggal target BUKAN di sini, tapi di js/script.js →
+       weddingData.date.targetISO & .thankYouISO. Ganti di KEDUA tempat. -->
   <section class="section countdown" id="countdown">
     <div class="countdown__bg" aria-hidden="true">
       <img src="assets/ornaments/10_decorative-frame.png" alt="" />
@@ -367,59 +288,41 @@
         Dengan memohon berkah dan rahmat Tuhan Yang Maha Kuasa, hari bahagia yang telah kami nantikan akan berlangsung pada:
       </p>
 
-      <!-- id="countdown-timer" DIBACA script.js (dom.countdownTimer) untuk
-           di-toggle display:none/'' oleh showCountdownTimer()/
-           showCountdownMessage(). role="timer" aria-live="polite" ->
-           pembaca layar akan mengumumkan perubahan angka TANPA interupsi
-           mendadak (polite = tunggu jeda baca alami, bukan segera). -->
+      <!-- role="timer" aria-live="polite" → pembaca layar umumkan perubahan
+           angka tanpa interupsi mendadak -->
       <div class="reveal-item delay-200 countdown__grid" id="countdown-timer" role="timer" aria-live="polite" aria-label="Hitung mundur menuju hari pernikahan">
-        <!-- 4 kotak identik berulang (Hari/Jam/Menit/Detik) — angka "00" di
-             bawah ini hanyalah PLACEHOLDER awal sebelum JS berjalan;
-             script.js -> updateCountdown() akan menimpa textContent
-             elemen #timer-days/hours/minutes/seconds setiap detik. -->
+        <!-- Angka "00" = placeholder awal, ditimpa updateCountdown() tiap detik -->
         <div class="countdown-badge">
-          <span class="countdown-num" id="timer-days">00</span>   <!-- diisi script.js: pad2(days) -->
+          <span class="countdown-num" id="timer-days">00</span>
           <span class="label-caps">Hari</span>
         </div>
         <div class="countdown-badge">
-          <span class="countdown-num" id="timer-hours">00</span>  <!-- diisi script.js: pad2(hours) -->
+          <span class="countdown-num" id="timer-hours">00</span>
           <span class="label-caps">Jam</span>
         </div>
         <div class="countdown-badge">
-          <span class="countdown-num" id="timer-minutes">00</span> <!-- diisi script.js: pad2(minutes) -->
+          <span class="countdown-num" id="timer-minutes">00</span>
           <span class="label-caps">Menit</span>
         </div>
         <div class="countdown-badge">
-          <span class="countdown-num" id="timer-seconds">00</span> <!-- diisi script.js: pad2(seconds), diperbarui tiap 1000ms via setInterval -->
+          <span class="countdown-num" id="timer-seconds">00</span>
           <span class="label-caps">Detik</span>
         </div>
       </div>
 
-      <!-- Elemen pesan fase "doa"/"thanks" — default disembunyikan via
-           inline style="display:none" (bukan class CSS) karena JS
-           MENULIS LANGSUNG ke elemen.style.display (lihat
-           showCountdownTimer/showCountdownMessage di script.js). Teks di
-           dalam <p> ini KOSONG di markup — diisi textContent oleh JS
-           sesuai fase aktif (weddingData.messages.doa / .thanks). -->
+      <!-- Default hidden via inline style (ditulis langsung oleh JS, bukan
+           class) — teks diisi JS sesuai fase aktif (weddingData.messages) -->
       <p class="body-md countdown__lead" id="countdown-message" role="status" aria-live="polite" style="display: none;"></p>
     </div>
   </section>
 
-  <!-- ==========================================
-       08 — WEDDING EVENTS (Tata Adicara / Susunan Acara)
-       ==========================================
-       Dua kartu acara: Akad Nikah & Resepsi, masing-masing berisi jadwal,
-       lokasi, dan panduan dresscode (dengan swatch warna).
-       Dependensi CSS : style.css -> "--- Events ---"
-       Dependensi JS  : script.js Bagian 7 -> initAddToCalendar() (tombol
-                         #btn-add-calendar di bawah grid kartu).
-       PENTING: teks jadwal/lokasi di dalam kartu <article class="event-card">
-       di bawah ini BERSIFAT STATIS (hardcoded). Deskripsi event yang
-       dibangun untuk Google Calendar diambil dari weddingData di
-       script.js, BUKAN dari teks HTML ini — jika jadwal berubah, update
-       KEDUANYA (HTML di sini untuk tampilan, DAN weddingData.events /
-       weddingData.location di script.js untuk event kalender) agar konsisten.
-       ========================================== -->
+  <!-- [09] SUSUNAN ACARA (Events)
+       Dua kartu acara: Akad Nikah & Resepsi (jadwal, lokasi, dresscode).
+       CSS : style.css § Events | JS : initAddToCalendar() (tombol #btn-add-calendar)
+       PENTING: teks jadwal di <article class="event-card"> di bawah statis
+       (hardcode). Deskripsi event untuk Google Calendar diambil dari
+       weddingData di script.js, BUKAN dari HTML ini — kalau jadwal berubah,
+       update KEDUANYA biar konsisten. -->
   <section class="section events" id="events">
     <div class="reveal-item delay-0 section-heading">
       <span class="label-caps section-heading__eyebrow">Rangkaian Pernikahan</span>
@@ -512,7 +415,7 @@
         </div>
       </article>
     </div>
-    
+
     <br> <br>
     <button class="reveal-item delay-300 btn btn--gold" id="btn-add-calendar" type="button">
       <span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>
@@ -521,20 +424,13 @@
 
   </section>
 
-  <!-- ==========================================
-       09 — LOCATION & PETA (Papan Palenggahan)
-       ==========================================
-       Grid 2 kolom: embed peta Google Maps (<iframe>) + kartu tata tertib
-       tamu & narahubung acara.
-       Dependensi CSS : style.css -> "--- Location ---"
-       Dependensi JS  : tidak ada (peta & tombol "Buka Rute" bersifat
-                         statis; lihat script.js Bagian 8 catatan MAPS).
-       UNTUK MENGGANTI LOKASI: (1) generate embed URL baru dari Google Maps
-       ("Share" -> "Embed a map") dan tempel ke atribut src <iframe
-       id="map-route-embed">, (2) update href tombol "Buka Rute di Google
-       Maps ↗" dengan format URL Google Maps Directions, (3) update alamat
-       teks di .map-card__footer-note & .rules-card__contact.
-       ========================================== -->
+  <!-- [10] LOKASI & PETA (Papan Palenggahan)
+       Grid 2 kolom: embed Google Maps + kartu tata tertib & narahubung.
+       CSS : style.css § Location | JS : tidak ada (statis)
+       Ganti lokasi: (1) ambil embed URL baru dari Google Maps "Share → Embed
+       a map" → tempel ke src #map-route-embed, (2) update href tombol "Buka
+       Rute di Google Maps", (3) update alamat di .map-card__footer-note &
+       .rules-card__contact. -->
   <section class="section location" id="location">
     <div class="reveal-item delay-0 section-heading">
       <span class="label-caps section-heading__eyebrow">Papan Palenggahan</span>
@@ -584,19 +480,11 @@
     </div>
   </section>
 
-  <!-- ==========================================
-       10 — LIVE STREAMING (SAAT INI DINONAKTIFKAN)
-       ==========================================
-       Isi section ini dibungkus komentar HTML di bawah (kartu ajakan
-       menonton live streaming via tombol "Tonton Siaran").
-       Dependensi CSS : style.css -> "--- Streaming ---"
-       Dependensi JS  : tidak ada logika khusus — tombol adalah <a href>
-                         statis yang idealnya memakai weddingData.streaming.url
-                         (field ini di-comment di script.js; uncomment bersamaan
-                         dengan mengaktifkan section ini).
-       UNTUK MENGAKTIFKAN: hapus tag pembungkus komentar di bawah, lalu isi href tombol
-       dengan link YouTube/platform streaming yang dipakai pada hari-H.
-       ========================================== -->
+  <!-- [11] LIVE STREAMING — NONAKTIF
+       Kartu ajakan nonton live streaming, tombol "Tonton Siaran".
+       CSS : style.css § Streaming | JS : tidak ada (href statis, idealnya
+       pakai weddingData.streaming.url — field ini juga di-comment di script.js)
+       Aktifkan: hapus komentar pembungkus, isi href tombol dgn link live hari-H. -->
   <section class="section streaming" id="streaming">
     <div class="reveal-item delay-0 streaming__card">
       <div class="streaming__info">
@@ -616,44 +504,29 @@
     </div> -->
   </section>
 
-  <!-- ==========================================
-       11 — LOVE STORY / TIMELINE (Babad Tresna / Lelampahan Tresna)
-       ==========================================
-       START: Timeline Love Story Section
-       Linimasa kronologis perjalanan cinta mempelai, 4 momen (Pertemuan
-       Pertama -> Menjalin Komitmen -> Lamaran -> Hari Pernikahan).
-       Lihat PDF slide: "Struktur Semantik Timeline Love Story" (struktur
-       <ol>/<li>/<article>/<time>) dan "Tata Letak Timeline Seluler/Desktop"
-       (single-column di mobile, alternating two-column di desktop >=768px).
-       Dependensi CSS : style.css -> "--- Story / Timeline ---" dan
-                         "--- Story / Timeline: Photo Slot ---"
-       Dependensi JS  : tidak ada logika KHUSUS timeline — hanya memakai
-                         sistem umum reveal-item/reveal-photo (script.js
-                         Bagian 5) untuk animasi muncul-saat-discroll.
+  <!-- [12] KISAH CINTA / TIMELINE (Babad Tresna)
+       Linimasa 4 momen: Pertemuan Pertama → Komitmen → Lamaran → Hari-H.
+       CSS : style.css § Story/Timeline & Photo Slot
+       JS  : tidak ada logika khusus, cuma reveal-item/reveal-photo (animasi scroll)
 
-       STRUKTUR SETIAP MOMEN (satu <li class="story__item story__item--left"
-       ATAU "story__item--right">, selang-seling mengikuti urutan di PDF):
+       Pola tiap momen (satu <li class="story__item story__item--left|--right">,
+       selang-seling kiri/kanan):
          <article class="story__card" aria-labelledby="story-heading-N">
            <figure class="story__photo">
-             <img ... onerror="this.remove()" />   [hilang otomatis jika gagal load]
-             <span class="story__photo-placeholder">...</span>  [fallback ikon kamera]
+             <img ... onerror="this.remove()" />   foto hilang sendiri jika gagal load
+             <span class="story__photo-placeholder">...</span>  fallback ikon kamera
            </figure>
-           <time datetime="YYYY-MM">Label Bulan Tahun</time>   [wajib ISO 8601 untuk mesin]
+           <time datetime="YYYY-MM">Label Bulan Tahun</time>   wajib ISO 8601
            <h4 id="story-heading-N">Judul Momen</h4>
-           <p>Deskripsi narasi momen.</p>
+           <p>Deskripsi.</p>
          </article>
-         <span class="story__node">...</span>  [ikon node pada garis sumbu]
+         <span class="story__node">...</span>  ikon di garis sumbu
 
-       UNTUK MENAMBAH MOMEN BARU: duplikasi satu <li> lengkap (ganti
-       --left/--right berikutnya sesuai pola selang-seling), ganti N pada
-       id "story-heading-N" & aria-labelledby agar tetap unik, isi
-       datetime, judul, deskripsi, dan path foto baru. Pastikan atribut
-       datetime konsisten format ISO 8601 (YYYY, YYYY-MM, atau lengkap)
-       untuk menjaga keterbacaan mesin/SEO (lihat PDF: "Time Wrapper").
-       Tidak perlu mengubah CSS/JS sama sekali untuk menambah momen.
-       ========================================== -->
+       Tambah momen baru: duplikasi satu <li> lengkap, lanjutkan pola
+       selang-seling --left/--right, ganti N di id & aria-labelledby (harus
+       unik), isi datetime/judul/deskripsi/foto baru. Tidak perlu ubah CSS/JS. -->
   <section class="section story" id="story">
-    <!-- Scoped no-JS safety net: reveal items in this section must stay visible if JavaScript fails to run -->
+    <!-- Jaga-jaga jika JS gagal jalan: item tetap terlihat (tidak stuck hidden) -->
     <noscript>
       <style>
         #story .reveal-item { opacity: 1 !important; transform: none !important; transition: none !important; }
@@ -668,35 +541,20 @@
 
     <ol class="story__timeline" aria-label="Lini masa perjalanan kisah cinta Arya dan Sekar secara kronologis">
 
-      <!-- CONTOH ANOTASI 1 MOMEN LENGKAP (pola yang sama berulang untuk 3
-           momen berikutnya di bawah — komentar detail hanya ditulis sekali
-           di sini sebagai referensi). -->
-      <li class="story__item story__item--right"> <!-- modifier --right: DESKTOP akan menampilkan kartu ini di SISI KIRI garis sumbu (lihat style.css --- Story/Timeline ---) -->
-        <article class="reveal-item delay-100 story__card" aria-labelledby="story-heading-1"> <!-- aria-labelledby menghubungkan <article> ini ke <h4 id="story-heading-1"> sbg "nama aksesibel"-nya, agar pembaca layar mengumumkan judul momen saat masuk ke blok ini -->
+      <li class="story__item story__item--right"> <!-- --right = kartu tampil di KIRI garis sumbu pada desktop -->
+        <article class="reveal-item delay-100 story__card" aria-labelledby="story-heading-1">
           <figure class="reveal-item reveal-photo delay-200 story__photo">
-            <!-- onerror="this.remove()": JIKA file gambar GAGAL dimuat (404,
-                 path salah, dsb.), <img> ini menghapus DIRINYA SENDIRI dari
-                 DOM, sehingga <span class="story__photo-placeholder"> di
-                 bawahnya (ikon kamera) otomatis terlihat sebagai fallback.
-                 loading="lazy" -> gambar baru dimuat browser saat hampir
-                 masuk viewport, menghemat bandwidth di awal kunjungan. -->
             <img class="story__photo-img" src="assets/images/story-pertemuan-1.png" alt="Dokumentasi momen pertemuan pertama Arya dan Sekar" loading="lazy" onerror="this.remove()" />
-            <span class="story__photo-placeholder" aria-hidden="true"> <!-- fallback ikon, hanya terlihat jika <img> di atas gagal -->
+            <span class="story__photo-placeholder" aria-hidden="true">
               <span class="material-symbols-outlined">add_a_photo</span>
             </span>
           </figure>
-          <!-- datetime="2019" WAJIB format ISO 8601 (tahun, "YYYY-MM", atau
-               lengkap) untuk keterbacaan MESIN (search engine, calendar
-               parser, dsb.) — CATATAN: nilai "2019" di sini TIDAK SELARAS
-               dengan teks tampilan "Mei 2020"; sebaiknya diperbaiki menjadi
-               datetime="2020-05" agar konsisten saat section ini diisi data final. -->
+          <!-- TODO: datetime="2019" belum selaras dgn teks "Mei 2020" — idealnya datetime="2020-05" -->
           <time class="label-caps" datetime="2019">Mei 2020</time>
-          <h4 id="story-heading-1" class="headline-sm">Pertemuan Pertama</h4> <!-- id ini yang dirujuk aria-labelledby di <article> pembungkus -->
+          <h4 id="story-heading-1" class="headline-sm">Pertemuan Pertama</h4>
           <p class="body-sm">Kisah kami dimulai saat bekerja bersama dalam pementasan Sendratari Ramayana di Prambanan. Dari pertemuan sederhana itu, tumbuh rasa yang membawa kami semakin dekat.</p>
         </article>
-        <!-- Titik ikon pada garis sumbu, ikon berbeda tiap momen sbg
-             simbolisme (favorite=cinta, handshake=komitmen,
-             ring_volume=lamaran, church=pernikahan). -->
+        <!-- Ikon berbeda tiap momen: favorite=cinta, handshake=komitmen, ring_volume=lamaran, church=pernikahan -->
         <span class="story__node" aria-hidden="true"><span class="material-symbols-outlined">favorite</span></span>
       </li>
 
@@ -747,137 +605,154 @@
 
     </ol>
   </section>
-  <!-- ========================================== -->
-  <!-- END: Timeline Love Story Section           -->
-  <!-- ========================================== -->
 
-  <!-- ==========================================
-       12 — GALLERY (Langensari Visual) — SAAT INI DINONAKTIFKAN
-       ==========================================
-       Grid foto dengan satu foto besar (.gallery__item--large) + beberapa
-       foto kecil, masing-masing membuka modal lightbox saat diklik.
-       Dependensi CSS : style.css -> "--- Gallery ---" & "--- Lightbox ---"
-       Dependensi JS  : script.js Bagian 9 -> initGallery(), openLightbox(),
-                         closeLightbox()
-       Setiap tombol foto memakai pola:
-         <button class="gallery__item" data-lightbox-src="URL_FOTO_FULL">
-           <img src="URL_THUMBNAIL" alt="..." />
-           <span class="gallery__caption">Keterangan</span>
-         </button>
-       UNTUK MENAMBAH FOTO: duplikasi satu <button class="gallery__item">,
-       ganti data-lightbox-src (URL resolusi penuh) & src (thumbnail,
-       boleh sama atau versi terkompresi), ganti alt text & caption.
-       Tidak perlu mengubah JS — initGallery() otomatis mendeteksi semua
-       elemen [data-lightbox-src] saat halaman dimuat.
-       ========================================== -->
+  <!-- [13] GALERI (Langensari Visual) — AKTIF (Modul Minggu 6, TP-1 & revisi)
+       Dulu: grid yang menampilkan SEMUA foto sekaligus. Sekarang: SLIDER
+       (karusel) — hanya satu foto penuh tampil per waktu, sesuai revisi
+       pembimbing ("jangan langsung semua").
+       CSS : style.css § Gallery Slider | JS : initGallerySlider() (script.js § 9A)
+
+       STRUKTUR:
+         #gallery-slider                     wadah karusel (fokus utk keyboard)
+           #gallery-slider-track             track yang di-scroll (scroll-snap)
+             .gallery-slider__slide (×N)     satu per foto
+               button[data-lightbox-src]     buka lightbox foto ini saat diklik
+                 img.gallery-slider__img     foto (loading="lazy", aspect-ratio 1:1 via CSS)
+               span.gallery-slider__caption  keterangan foto
+           button#gallery-prev / #gallery-next   navigasi ‹ ›
+           #gallery-dots                     titik indikator (dibuat otomatis oleh JS)
+           #gallery-slider-status            teks status utk screen reader ("Foto 2 dari 5")
+
+       TAMBAH FOTO BARU: duplikasi satu .gallery-slider__slide, ganti
+       data-lightbox-src (foto resolusi penuh), src (boleh sama), alt, dan
+       data-caption. Dots & lightbox otomatis menyesuaikan jumlah foto —
+       tidak perlu ubah JS/CSS. Modul merekomendasikan ≥48 foto format
+       WebP/AVIF terkompresi (≤150KB) agar performa (LCP) tetap baik. -->
   <section class="section gallery" id="gallery">
     <div class="reveal-item delay-0 section-heading">
       <span class="label-caps section-heading__eyebrow">Memori &amp; Potret</span>
-      <!-- <h2 class="headline-lg section-heading__title">Langensari Visual</h2>
+      <h2 class="headline-lg section-heading__title">Langensari Visual</h2>
       <div class="section-heading__rule" aria-hidden="true"></div>
     </div>
 
-    <div class="gallery__grid">
-      <button class="reveal-item reveal-photo delay-100 gallery__item gallery__item--large" type="button" data-lightbox-src="https://lh3.googleusercontent.com/aida/AEtjO1UvsHpoeK--XOrmSg3lpXDqo601XD9WXLzs6teAZMMnGio9dHCdDov9Le-8zgeYKlVrJPxjygq7Z6Zq3mK2PYmV_MU1l2t0k_8jv_daXbm5YuI_45ayASf5X2a6fvBYUEIUiuy4LekNOBA95kvXLPJOHHopjpa5Eu4zlg5CyKsgKvxxGQMHm7ifQKZQnNMIzmFJUebXQddOXVAfr4owHIEtiRN1l0fXF0GD8_kiLAKunRh0VeB345f73WJy">
-        <img src="https://lh3.googleusercontent.com/aida/AEtjO1UvsHpoeK--XOrmSg3lpXDqo601XD9WXLzs6teAZMMnGio9dHCdDov9Le-8zgeYKlVrJPxjygq7Z6Zq3mK2PYmV_MU1l2t0k_8jv_daXbm5YuI_45ayASf5X2a6fvBYUEIUiuy4LekNOBA95kvXLPJOHHopjpa5Eu4zlg5CyKsgKvxxGQMHm7ifQKZQnNMIzmFJUebXQddOXVAfr4owHIEtiRN1l0fXF0GD8_kiLAKunRh0VeB345f73WJy" alt="Potret Penganten Putri" loading="lazy" />
-        <span class="gallery__caption title-script">Sang Kusumaning Ayoe</span>
+    <div class="reveal-item delay-100 gallery-slider" id="gallery-slider" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Galeri foto pre-wedding — geser atau gunakan tombol panah untuk melihat foto lain">
+      <div class="gallery-slider__track" id="gallery-slider-track">
+
+        <div class="gallery-slider__slide">
+          <button class="gallery-slider__view-btn" type="button" data-lightbox-src="https://lh3.googleusercontent.com/aida/AEtjO1UvsHpoeK--XOrmSg3lpXDqo601XD9WXLzs6teAZMMnGio9dHCdDov9Le-8zgeYKlVrJPxjygq7Z6Zq3mK2PYmV_MU1l2t0k_8jv_daXbm5YuI_45ayASf5X2a6fvBYUEIUiuy4LekNOBA95kvXLPJOHHopjpa5Eu4zlg5CyKsgKvxxGQMHm7ifQKZQnNMIzmFJUebXQddOXVAfr4owHIEtiRN1l0fXF0GD8_kiLAKunRh0VeB345f73WJy" data-caption="Sang Kusumaning Ayoe" aria-label="Perbesar foto: Sang Kusumaning Ayoe">
+            <img class="gallery-slider__img" src="https://lh3.googleusercontent.com/aida/AEtjO1UvsHpoeK--XOrmSg3lpXDqo601XD9WXLzs6teAZMMnGio9dHCdDov9Le-8zgeYKlVrJPxjygq7Z6Zq3mK2PYmV_MU1l2t0k_8jv_daXbm5YuI_45ayASf5X2a6fvBYUEIUiuy4LekNOBA95kvXLPJOHHopjpa5Eu4zlg5CyKsgKvxxGQMHm7ifQKZQnNMIzmFJUebXQddOXVAfr4owHIEtiRN1l0fXF0GD8_kiLAKunRh0VeB345f73WJy" alt="Potret Penganten Putri" loading="lazy" />
+          </button>
+          <span class="gallery-slider__caption title-script">Sang Kusumaning Ayoe</span>
+        </div>
+
+        <div class="gallery-slider__slide">
+          <button class="gallery-slider__view-btn" type="button" data-lightbox-src="https://lh3.googleusercontent.com/aida/AEtjO1W0sJB0JIK3IgdhfTsWl3afPlRui-wZ4rLBcF45zg-NJ71OdDBGttLxIovTt5nOSMjvQqB2oVLVrk8U8qJ9ARyuARP95LJVyao96lTRELVxsAKsXC8x4U0bi0GzVO3AtXuUvgjqAunN64ZEWVsWPonQtRTD8xIOIhS9udeVqCV6JXuea1lxHZyCFQxhsgSY3aTOQngx5UJjm3MqoKwcrqGXHu6Tvc-NYisyP4RIDGPPdZp8ivrng5__aeDQ" data-caption="Ksatria Kraton" aria-label="Perbesar foto: Ksatria Kraton">
+            <img class="gallery-slider__img" src="https://lh3.googleusercontent.com/aida/AEtjO1W0sJB0JIK3IgdhfTsWl3afPlRui-wZ4rLBcF45zg-NJ71OdDBGttLxIovTt5nOSMjvQqB2oVLVrk8U8qJ9ARyuARP95LJVyao96lTRELVxsAKsXC8x4U0bi0GzVO3AtXuUvgjqAunN64ZEWVsWPonQtRTD8xIOIhS9udeVqCV6JXuea1lxHZyCFQxhsgSY3aTOQngx5UJjm3MqoKwcrqGXHu6Tvc-NYisyP4RIDGPPdZp8ivrng5__aeDQ" alt="Potret Penganten Kakung" loading="lazy" />
+          </button>
+          <span class="gallery-slider__caption title-script">Ksatria Kraton</span>
+        </div>
+
+        <div class="gallery-slider__slide">
+          <button class="gallery-slider__view-btn" type="button" data-lightbox-src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcHwFM9Em_UF2Vt0yKgMYmNb94qeQuZYqWLQVd_oK9OdbSjFtdcsS07p-woEhC4IOUXUqGApkh9d5lQwX2M-GLy1IWZCIMYc0_2Eoyu7N6IQhXj8_Ukv4N7inSkunqNX9prQt4BUKt8DfUQfaZi4ZyszS287qOpUylx5SKNQ3X8IDEKzanH1_pu1Oup3GnKVRfw_UfToK4o0bPd3By3BlDD9X6tdA1Dn_f2lrfQGp6fFXnwifTrcP6k06e-mNnyokWsXM" data-caption="Keagungan Sasana" aria-label="Perbesar foto: Keagungan Sasana">
+            <img class="gallery-slider__img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDz8_szjqOmCR3Jyg13VpS1zllA-Lf4q6ms8qXUBKR4utCD0D_1jpprsa2SLlhb9h8HgBXegS9GaCuFJIwbLxUdpIgVktpIshi0ICFrt7VFNrZV5yu8NPGnU9LNaPlTfgx0YwCWnSgtQAshD739VAMWVFqf3p3hR38gwPkcWx27PhC9V3VNDVd9wYHyMniG40mq2O-S1fK0PCHpjS_WyYKnmJnswMjBfy8Ka6go-NtEZbKd8mb0qSYSwXF1F2utQ1GTYFw" alt="Pendopo Royal Heritage" loading="lazy" />
+          </button>
+          <span class="gallery-slider__caption title-script">Keagungan Sasana</span>
+        </div>
+
+        <div class="gallery-slider__slide">
+          <button class="gallery-slider__view-btn" type="button" data-lightbox-src="https://lh3.googleusercontent.com/aida/AEtjO1UvsHpoeK--XOrmSg3lpXDqo601XD9WXLzs6teAZMMnGio9dHCdDov9Le-8zgeYKlVrJPxjygq7Z6Zq3mK2PYmV_MU1l2t0k_8jv_daXbm5YuI_45ayASf5X2a6fvBYUEIUiuy4LekNOBA95kvXLPJOHHopjpa5Eu4zlg5CyKsgKvxxGQMHm7ifQKZQnNMIzmFJUebXQddOXVAfr4owHIEtiRN1l0fXF0GD8_kiLAKunRh0VeB345f73WJy" data-caption="Reroncen Melati" aria-label="Perbesar foto: Reroncen Melati">
+            <img class="gallery-slider__img" src="https://lh3.googleusercontent.com/aida/AEtjO1UvsHpoeK--XOrmSg3lpXDqo601XD9WXLzs6teAZMMnGio9dHCdDov9Le-8zgeYKlVrJPxjygq7Z6Zq3mK2PYmV_MU1l2t0k_8jv_daXbm5YuI_45ayASf5X2a6fvBYUEIUiuy4LekNOBA95kvXLPJOHHopjpa5Eu4zlg5CyKsgKvxxGQMHm7ifQKZQnNMIzmFJUebXQddOXVAfr4owHIEtiRN1l0fXF0GD8_kiLAKunRh0VeB345f73WJy" alt="Paes Ageng Tradisional" loading="lazy" />
+          </button>
+          <span class="gallery-slider__caption title-script">Reroncen Melati</span>
+        </div>
+
+        <div class="gallery-slider__slide">
+          <button class="gallery-slider__view-btn" type="button" data-lightbox-src="https://lh3.googleusercontent.com/aida/AEtjO1W0sJB0JIK3IgdhfTsWl3afPlRui-wZ4rLBcF45zg-NJ71OdDBGttLxIovTt5nOSMjvQqB2oVLVrk8U8qJ9ARyuARP95LJVyao96lTRELVxsAKsXC8x4U0bi0GzVO3AtXuUvgjqAunN64ZEWVsWPonQtRTD8xIOIhS9udeVqCV6JXuea1lxHZyCFQxhsgSY3aTOQngx5UJjm3MqoKwcrqGXHu6Tvc-NYisyP4RIDGPPdZp8ivrng5__aeDQ" data-caption="Sikep Ageng" aria-label="Perbesar foto: Sikep Ageng">
+            <img class="gallery-slider__img" src="https://lh3.googleusercontent.com/aida/AEtjO1W0sJB0JIK3IgdhfTsWl3afPlRui-wZ4rLBcF45zg-NJ71OdDBGttLxIovTt5nOSMjvQqB2oVLVrk8U8qJ9ARyuARP95LJVyao96lTRELVxsAKsXC8x4U0bi0GzVO3AtXuUvgjqAunN64ZEWVsWPonQtRTD8xIOIhS9udeVqCV6JXuea1lxHZyCFQxhsgSY3aTOQngx5UJjm3MqoKwcrqGXHu6Tvc-NYisyP4RIDGPPdZp8ivrng5__aeDQ" alt="Busana Beskap Jawi" loading="lazy" />
+          </button>
+          <span class="gallery-slider__caption title-script">Sikep Ageng</span>
+        </div>
+
+      </div>
+
+      <!-- Tombol navigasi karusel ‹ › -->
+      <button class="gallery-slider__nav gallery-slider__nav--prev" id="gallery-prev" type="button" aria-label="Foto sebelumnya">
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+      </button>
+      <button class="gallery-slider__nav gallery-slider__nav--next" id="gallery-next" type="button" aria-label="Foto berikutnya">
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
       </button>
 
-      <button class="reveal-item reveal-photo delay-200 gallery__item" type="button" data-lightbox-src="https://lh3.googleusercontent.com/aida/AEtjO1W0sJB0JIK3IgdhfTsWl3afPlRui-wZ4rLBcF45zg-NJ71OdDBGttLxIovTt5nOSMjvQqB2oVLVrk8U8qJ9ARyuARP95LJVyao96lTRELVxsAKsXC8x4U0bi0GzVO3AtXuUvgjqAunN64ZEWVsWPonQtRTD8xIOIhS9udeVqCV6JXuea1lxHZyCFQxhsgSY3aTOQngx5UJjm3MqoKwcrqGXHu6Tvc-NYisyP4RIDGPPdZp8ivrng5__aeDQ">
-        <img src="https://lh3.googleusercontent.com/aida/AEtjO1W0sJB0JIK3IgdhfTsWl3afPlRui-wZ4rLBcF45zg-NJ71OdDBGttLxIovTt5nOSMjvQqB2oVLVrk8U8qJ9ARyuARP95LJVyao96lTRELVxsAKsXC8x4U0bi0GzVO3AtXuUvgjqAunN64ZEWVsWPonQtRTD8xIOIhS9udeVqCV6JXuea1lxHZyCFQxhsgSY3aTOQngx5UJjm3MqoKwcrqGXHu6Tvc-NYisyP4RIDGPPdZp8ivrng5__aeDQ" alt="Potret Penganten Kakung" loading="lazy" />
-        <span class="gallery__caption title-script">Ksatria Kraton</span>
-      </button>
+      <!-- Status "Foto X dari N" khusus pembaca layar; diisi JS (updateGalleryDots) -->
+      <p class="gallery-slider__status" id="gallery-slider-status" aria-live="polite"></p>
+    </div>
 
-      <button class="reveal-item reveal-photo delay-300 gallery__item" type="button" data-lightbox-src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcHwFM9Em_UF2Vt0yKgMYmNb94qeQuZYqWLQVd_oK9OdbSjFtdcsS07p-woEhC4IOUXUqGApkh9d5lQwX2M-GLy1IWZCIMYc0_2Eoyu7N6IQhXj8_Ukv4N7inSkunqNX9prQt4BUKt8DfUQfaZi4ZyszS287qOpUylx5SKNQ3X8IDEKzanH1_pu1Oup3GnKVRfw_UfToK4o0bPd3By3BlDD9X6tdA1Dn_f2lrfQGp6fFXnwifTrcP6k06e-mNnyokWsXM">
-        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDz8_szjqOmCR3Jyg13VpS1zllA-Lf4q6ms8qXUBKR4utCD0D_1jpprsa2SLlhb9h8HgBXegS9GaCuFJIwbLxUdpIgVktpIshi0ICFrt7VFNrZV5yu8NPGnU9LNaPlTfgx0YwCWnSgtQAshD739VAMWVFqf3p3hR38gwPkcWx27PhC9V3VNDVd9wYHyMniG40mq2O-S1fK0PCHpjS_WyYKnmJnswMjBfy8Ka6go-NtEZbKd8mb0qSYSwXF1F2utQ1GTYFw" alt="Pendopo Royal Heritage" loading="lazy" />
-        <span class="gallery__caption title-script">Keagungan Sasana</span>
-      </button>
-
-      <button class="reveal-item reveal-photo delay-200 gallery__item" type="button" data-lightbox-src="https://lh3.googleusercontent.com/aida/AEtjO1UvsHpoeK--XOrmSg3lpXDqo601XD9WXLzs6teAZMMnGio9dHCdDov9Le-8zgeYKlVrJPxjygq7Z6Zq3mK2PYmV_MU1l2t0k_8jv_daXbm5YuI_45ayASf5X2a6fvBYUEIUiuy4LekNOBA95kvXLPJOHHopjpa5Eu4zlg5CyKsgKvxxGQMHm7ifQKZQnNMIzmFJUebXQddOXVAfr4owHIEtiRN1l0fXF0GD8_kiLAKunRh0VeB345f73WJy">
-        <img src="https://lh3.googleusercontent.com/aida/AEtjO1UvsHpoeK--XOrmSg3lpXDqo601XD9WXLzs6teAZMMnGio9dHCdDov9Le-8zgeYKlVrJPxjygq7Z6Zq3mK2PYmV_MU1l2t0k_8jv_daXbm5YuI_45ayASf5X2a6fvBYUEIUiuy4LekNOBA95kvXLPJOHHopjpa5Eu4zlg5CyKsgKvxxGQMHm7ifQKZQnNMIzmFJUebXQddOXVAfr4owHIEtiRN1l0fXF0GD8_kiLAKunRh0VeB345f73WJy" alt="Paes Ageng Tradisional" loading="lazy" />
-        <span class="gallery__caption title-script">Reroncen Melati</span>
-      </button>
-
-      <button class="reveal-item reveal-photo delay-300 gallery__item" type="button" data-lightbox-src="https://lh3.googleusercontent.com/aida/AEtjO1W0sJB0JIK3IgdhfTsWl3afPlRui-wZ4rLBcF45zg-NJ71OdDBGttLxIovTt5nOSMjvQqB2oVLVrk8U8qJ9ARyuARP95LJVyao96lTRELVxsAKsXC8x4U0bi0GzVO3AtXuUvgjqAunN64ZEWVsWPonQtRTD8xIOIhS9udeVqCV6JXuea1lxHZyCFQxhsgSY3aTOQngx5UJjm3MqoKwcrqGXHu6Tvc-NYisyP4RIDGPPdZp8ivrng5__aeDQ">
-        <img src="https://lh3.googleusercontent.com/aida/AEtjO1W0sJB0JIK3IgdhfTsWl3afPlRui-wZ4rLBcF45zg-NJ71OdDBGttLxIovTt5nOSMjvQqB2oVLVrk8U8qJ9ARyuARP95LJVyao96lTRELVxsAKsXC8x4U0bi0GzVO3AtXuUvgjqAunN64ZEWVsWPonQtRTD8xIOIhS9udeVqCV6JXuea1lxHZyCFQxhsgSY3aTOQngx5UJjm3MqoKwcrqGXHu6Tvc-NYisyP4RIDGPPdZp8ivrng5__aeDQ" alt="Busana Beskap Jawi" loading="lazy" />
-        <span class="gallery__caption title-script">Sikep Ageng</span>
-      </button>
-    </div> -->
+    <!-- Titik indikator (dots) — isinya digenerate script.js (buildGalleryDots) -->
+    <div class="gallery-slider__dots" id="gallery-dots" role="tablist" aria-label="Pilih foto galeri"></div>
   </section>
 
-  <!-- ==========================================
-       13 — LIGHTBOX MODAL (bukan <section>, melainkan modal overlay)
-       ==========================================
-       Modal untuk menampilkan 1 foto galeri dalam ukuran penuh. Elemen ini
-       diposisikan di luar <section>, tapi tetap di dalam <main>, karena
-       sifatnya global (dipicu oleh item galeri manapun).
-       Dependensi CSS : style.css -> "--- Lightbox ---"
-       Dependensi JS  : script.js -> openLightbox()/closeLightbox()
-                         (ditutup via tombol close, klik backdrop, atau Escape)
-       #lightbox-img.src diisi secara dinamis oleh openLightbox(src) saat
-       sebuah foto galeri diklik — JANGAN diisi manual di HTML.
-       ========================================== -->
-  <div class="lightbox" id="gallery-lightbox">
+  <!-- [13b] LIGHTBOX MODAL (bukan section, overlay global) — AKTIF (TP-2)
+       Modal full-size untuk 1 foto galeri, dengan navigasi Prev/Next/Close.
+       Diposisikan di luar <section> tapi tetap di dalam <main> karena
+       dipicu item galeri manapun.
+       CSS : style.css § Lightbox
+       JS  : initLightbox(), openLightbox(), closeLightbox(),
+             showNextLightboxImage(), showPrevLightboxImage() (script.js § 9B)
+             (tutup via tombol close, klik backdrop, atau Escape; navigasi
+             via tombol ‹ › atau ArrowLeft/ArrowRight)
+       #lightbox-img.src & #lightbox-caption diisi dinamis oleh
+       renderLightboxImage() — jangan isi manual. -->
+  <div class="lightbox" id="gallery-lightbox" role="dialog" aria-modal="true" aria-label="Pratinjau foto galeri">
     <div class="lightbox__inner">
       <button class="lightbox__close" id="lightbox-close" type="button" aria-label="Tutup Lightbox">
         <span class="material-symbols-outlined" aria-hidden="true">close</span>
       </button>
+      <button class="lightbox__nav lightbox__nav--prev" id="lightbox-prev" type="button" aria-label="Foto sebelumnya">
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+      </button>
       <img class="lightbox__img" id="lightbox-img" src="" alt="Lightbox Preview" />
+      <button class="lightbox__nav lightbox__nav--next" id="lightbox-next" type="button" aria-label="Foto berikutnya">
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+      </button>
+      <p class="lightbox__caption title-script" id="lightbox-caption"></p>
     </div>
   </div>
 
-  <!-- ==========================================
-       14 — CINEMATIC VIDEO TEASER (Sinema Tresna) — SAAT INI DINONAKTIFKAN
-       ==========================================
-       Player video kustom: poster gambar + tombol play yang menampilkan
-       elemen <video> asli saat diklik.
-       Dependensi CSS : style.css -> "--- Video ---"
-       Dependensi JS  : script.js Bagian 10 -> initVideoTeaser()
-       Elemen kunci: #video-player (container), #btn-play-video (tombol
-       play), #teaser-video (elemen <video> asli, src diarahkan ke file
-       lokal assets/video/wedding-teaser.mp4 — pastikan file ini ada saat
-       mengaktifkan section ini).
-       ========================================== -->
+  <!-- [14] VIDEO TERSEMAT (Sinema Tresna) — AKTIF (Modul Minggu 6, TP-3)
+       Dulu: player kustom (poster gambar + tombol play + elemen <video>
+       lokal). Sekarang: <iframe> YouTube yang responsif (rasio 16:9),
+       sesuai modul — tidak perlu file video lokal & tidak perlu JS kustom
+       (kontrol play/pause/fullscreen sudah bawaan player YouTube).
+       CSS : style.css § Video Wrapper (.video-wrapper)
+       GANTI VIDEO: ganti VIDEO_ID pada src iframe di bawah dengan ID video
+       YouTube yang sebenarnya (bagian setelah "watch?v=" atau "youtu.be/"
+       di URL YouTube). -->
   <section class="section video" id="video">
     <div class="reveal-item delay-0 section-heading">
       <span class="label-caps section-heading__eyebrow">Sinema &amp; Dokumenter</span>
-      <!-- <h2 class="headline-lg section-heading__title">Sinema Tresna</h2>
+      <h2 class="headline-lg section-heading__title">Sinema Tresna</h2>
       <div class="section-heading__rule" aria-hidden="true"></div>
     </div>
 
-    <div class="reveal-item delay-100 video-player" id="video-player">
-      <img class="video-player__poster" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUPR_cZHpEYPWkbV3RwXDLOmxpJJ2B6D87bA6mJyEePH532H2I2STWp9zTWdetjLTNYF2Asm9zTXEr41127JQWe4NEh8HL1AMKCo3SrJTYwsb69pmDMnhe6o6fZmyc9km0VkNmfYhuxI3lq2rqwCxSWAQn76YhKp9PZ_mdizOvYd_3lcb1JDjvkKU83cWxTn72CJTW_eGA-kwwSC9BMPZR-luYFM7jhcfzcRvWP1Fhryldqyf4ZLZBEyfMjD-wJjW_PKQ" alt="Prewedding Video Poster" />
-      <div class="video-player__scrim" aria-hidden="true"></div>
-      <button class="video-player__play" id="btn-play-video" type="button" aria-label="Putar Teaser Film">
-        <span class="material-symbols-outlined" aria-hidden="true">play_arrow</span>
-      </button>
-      <div class="video-player__meta">
-        <div>
-          <span class="label-caps">Official Wedding Teaser</span>
-          <p class="headline-sm">Gending Tresna: Arya &amp; Sekar</p>
-        </div>
-        <span class="video-player__duration">03:45</span>
-      </div>
-      <video class="video-player__element" id="teaser-video" src="assets/video/wedding-teaser.mp4" controls playsinline hidden></video>
-    </div> -->
+    <div class="reveal-item delay-100 video-wrapper">
+      <iframe
+        src="https://www.youtube.com/embed/qNy_hxzZIEw?si=OcoN9Nnpca--wBSb"
+        title="Gending Tresna: Video Pernikahan Arya &amp; Sekar"
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen>
+      </iframe>
+    </div>
   </section>
 
-  <!-- ==========================================
-       15 — DIGITAL GIFT (Tanda Tresna Digital) — SAAT INI DINONAKTIFKAN
-       ==========================================
-       Kartu nomor rekening bank (.bank-card) + kartu alamat pengiriman
-       kado fisik (.address-card), masing-masing dengan tombol "Salin".
-       Dependensi CSS : style.css -> "--- Gift / Bank cards ---"
-       Dependensi JS  : script.js Bagian 12 -> initCopyButtons(),
-                         copyToClipboard() (dipanggil via atribut
-                         data-copy-value & data-copy-message pada setiap
-                         tombol <button type="button" data-copy-value="...">).
-       UNTUK MENAMBAH/MENGUBAH REKENING: duplikasi satu <article
-       class="bank-card">, ganti nama bank, nomor rekening tampilan
-       (dengan spasi untuk keterbacaan) DAN data-copy-value (TANPA spasi,
-       nilai mentah yang akan disalin ke clipboard), serta
-       data-copy-message (teks toast konfirmasi).
-       ========================================== -->
+  <!-- [15] KADO DIGITAL (Tanda Tresna Digital) — NONAKTIF
+       Kartu rekening bank + kartu alamat kado fisik, masing-masing ada tombol "Salin".
+       CSS : style.css § Gift / Bank cards
+       JS  : initCopyButtons(), copyToClipboard() — dipicu atribut
+             data-copy-value & data-copy-message di tiap tombol.
+       Tambah/ubah rekening: duplikasi <article class="bank-card">, ganti
+       nama bank, nomor tampilan (boleh pakai spasi), dan data-copy-value
+       (TANPA spasi — nilai mentah yang disalin), serta data-copy-message. -->
   <section class="section gift" id="gift">
     <div class="reveal-item delay-0 section-heading">
       <span class="label-caps section-heading__eyebrow">Kado &amp; Tanda Asih</span>
@@ -940,24 +815,15 @@
     </article> -->
   </section>
 
-  <!-- ==========================================
-       16 — RSVP (Konfirmasi Kehadiran) — SAAT INI DINONAKTIFKAN
-       ==========================================
-       Form konfirmasi kehadiran tamu: nama, status hadir/ragu/tidak,
-       jumlah tamu, dan ucapan/doa.
-       Dependensi CSS : style.css -> "--- RSVP Form ---"
-       Dependensi JS  : script.js Bagian 13 -> initRsvpForm(), handleRsvpSubmit()
-       PENTING (lihat juga catatan di script.js): form ini TIDAK mengirim
-       data ke server — submit hanya menambahkan kartu baru ke buku tamu
-       (#wishes-container pada section Wishes di bawah) secara LOKAL di
-       browser tamu tsb saja (hilang saat halaman di-refresh). Untuk RSVP
-       sungguhan yang tersimpan & terlihat semua tamu, integrasikan
-       handleRsvpSubmit() di script.js dengan backend (Google Apps Script,
-       Firebase, dsb.) — lihat catatan detail di script.js Bagian 13.
-       Elemen form WAJIB memiliki `id="rsvp-form"` & name attribute pada
-       setiap input (name="attendance" untuk radio group) agar terbaca
-       benar oleh handleRsvpSubmit().
-       ========================================== -->
+  <!-- [16] RSVP — Konfirmasi Kehadiran — NONAKTIF
+       Form: nama, status hadir/ragu/tidak, jumlah tamu, ucapan/doa.
+       CSS : style.css § RSVP Form | JS : initRsvpForm(), handleRsvpSubmit()
+       PENTING: form ini TIDAK kirim ke server — submit cuma menambah kartu
+       baru ke #wishes-container secara LOKAL (hilang saat refresh). Untuk
+       RSVP sungguhan, sambungkan handleRsvpSubmit() ke backend (Google Apps
+       Script, Firebase, dll) — lihat script.js § 13.
+       Wajib: <form id="rsvp-form">, dan atribut name di tiap input
+       (name="attendance" utk radio group) agar terbaca handleRsvpSubmit(). -->
   <section class="section rsvp" id="rsvp">
     <div class="reveal-item delay-0 section-heading">
       <span class="label-caps section-heading__eyebrow">Palapuran Rawuh</span>
@@ -1012,21 +878,14 @@
     </form> -->
   </section>
 
-  <!-- ==========================================
-       17 — WEDDING WISHES / BUKU TAMU (Pandonga) — SAAT INI DINONAKTIFKAN
-       ==========================================
-       Daftar ucapan/doa dari tamu. Kartu-kartu di dalam
-       #wishes-container di bawah ini CONTOH STATIS (akan tetap tampil
-       sebagai "ucapan awal" / seed data); setiap submit form RSVP (lihat
-       section 16 di atas) akan MENYISIPKAN kartu baru DI ATAS kartu-kartu
-       ini (prepend), bukan menggantikannya.
-       Dependensi CSS : style.css -> "--- Wishes / Guestbook ---"
-       Dependensi JS  : script.js Bagian 14 -> addWishCard(), getInitials(),
-                         escapeHtml() (dipanggil dari handleRsvpSubmit())
-       UNTUK MENGUBAH UCAPAN CONTOH: edit langsung teks di dalam
-       <article class="wish-card"> di bawah, atau hapus semuanya jika
-       ingin daftar dimulai kosong sebelum ada RSVP masuk.
-       ========================================== -->
+  <!-- [17] BUKU TAMU / WISHES (Pandonga) — NONAKTIF
+       Daftar ucapan/doa tamu. Kartu di #wishes-container ini contoh statis
+       (tetap tampil sbg "ucapan awal"); tiap submit RSVP (section 16)
+       menambah kartu baru DI ATASNYA (prepend), bukan mengganti.
+       CSS : style.css § Wishes / Guestbook
+       JS  : addWishCard(), getInitials(), escapeHtml() — dipanggil dari handleRsvpSubmit()
+       Ganti ucapan contoh: edit langsung tiap <article class="wish-card">,
+       atau hapus semua jika ingin daftar mulai kosong. -->
   <section class="section wishes" id="wishes">
     <div class="reveal-item delay-0 section-heading">
       <span class="label-caps section-heading__eyebrow">Untaian Doa Restu</span>
@@ -1073,19 +932,13 @@
     </div> -->
   </section>
 
-  <!-- ==========================================
-       18 — CLOSING (Panutup & Matur Nuwun)
-       ==========================================
-       Footer penutup: ucapan terima kasih, salam, info kedua keluarga, dan
-       tanda tangan nama mempelai. Elemen ini memakai tag <footer> (bukan
-       <section>) tapi tetap memakai class "section closing" agar mewarisi
-       padding/layout dasar yang sama seperti section lainnya.
-       Dependensi CSS : style.css -> "--- Closing ---"
-       Dependensi JS  : tidak ada (statis, hanya reveal-item).
-       CATATAN: sebagian konten (salam Jawa penutup & detail kedua
-       keluarga) saat ini DI-COMMENT di dalam footer ini — hapus tag pembungkus komentar
-       terkait untuk menampilkannya kembali.
-       ========================================== -->
+  <!-- [18] PENUTUP (Closing / Matur Nuwun)
+       Footer: ucapan terima kasih, salam, info kedua keluarga, tanda tangan nama.
+       Pakai tag <footer> tapi class "section closing" biar warisi
+       padding/layout sama seperti section lain.
+       CSS : style.css § Closing | JS : tidak ada (statis, cuma reveal-item)
+       NONAKTIF SEBAGIAN: salam Jawa penutup & detail kedua keluarga masih
+       di-comment — hapus komentar pembungkus untuk menampilkan. -->
   <footer class="section closing" id="closing">
     <div class="closing__bg" aria-hidden="true">
       <img src="assets/ornaments/03_gunungan.png" alt="" />
@@ -1123,17 +976,12 @@
 
 </main>
 
-<!-- ==========================================
-     SCRIPT LOADING
-     ==========================================
-     script.js dimuat di AKHIR <body> (bukan di <head>) agar seluruh
-     markup di atas sudah ter-parse browser SEBELUM script dieksekusi —
-     ini penting karena script.js mengandalkan document.getElementById()
-     untuk mengisi objek `dom` di awal eksekusinya (lihat script.js Bagian
-     2 DOM REFERENCES). Tidak memakai atribut `defer`/`async` karena posisi
-     di akhir <body> sudah cukup memberi jaminan urutan eksekusi yang benar
-     untuk skrip tunggal non-modular ini.
-     ========================================== -->
+<!-- SCRIPT LOADING
+     script.js dimuat di akhir <body> (bukan <head>) supaya seluruh markup di
+     atas sudah ter-parse browser sebelum script jalan — penting karena
+     script.js pakai getElementById() di awal eksekusi (§ DOM REFERENCES).
+     Tidak pakai defer/async karena posisi di akhir body sudah cukup
+     menjamin urutan eksekusi yang benar untuk script tunggal ini. -->
 <script src="js/script.js"></script>
 </body>
 </html>
