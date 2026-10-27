@@ -38,6 +38,9 @@
        menampilkan semua foto sekaligus, melainkan sebagai SLIDER/KARUSEL
        (satu foto tampil penuh per waktu, geser via tombol/swipe/keyboard).
        Lihat Bagian 9 -> initGallerySlider().
+     - REVISI LANJUTAN (desktop saja, >= 1024px): slider menampilkan 3 foto
+       sekaligus dan menggeser 1 foto per klik. Mobile/tablet tetap 1 foto.
+       Lihat getVisibleSlides() & getMaxSlideIndex() di Bagian 9A.
      - Lightbox (modal pembesar foto) tetap dipertahankan sesuai modul
        (TP-2): dibuka dari slide yang sedang aktif, lalu bisa navigasi
        Next/Prev/Close ke SEMUA foto galeri, didukung tombol & keyboard
@@ -262,12 +265,18 @@
    * CSS di style.css Bagian 5; ubah keduanya bersamaan):
    *   0 ms    : wayang & konten tengah bergerak keluar/memudar
    *   500 ms  : seluruh sampul fade-out
-   *   1200 ms : sampul disembunyikan, scroll dibuka, scroll-reveal & audio dimulai
+   *   1200 ms : sampul disembunyikan, scroll dibuka, scroll-reveal dimulai
+   * Audio dimulai LANGSUNG saat klik (0 ms), bukan di timeout (lihat Bagian 11).
    */
   function initOpeningCurtain() {
     if (!dom.btnOpen || !dom.curtain) return;
 
     dom.btnOpen.addEventListener('click', () => {
+      // Autoplay bypass (Modul Minggu 7, TP-3): play() HARUS dipanggil
+      // langsung di dalam handler klik (bukan di setTimeout) agar dihitung
+      // sebagai gestur pengguna — terutama di iOS Safari.
+      attemptAutoplayAudio();
+
       // Tahap 1 (0 ms)
       if (dom.wayangLeft) {
         dom.wayangLeft.style.transform = 'translateX(-120%) rotate(-5deg)';
@@ -293,7 +302,6 @@
         dom.curtain.style.display = 'none';
         dom.body.classList.add('is-unlocked'); // buka kembali scroll (lihat style.css)
         initScrollReveal();
-        attemptAutoplayAudio(); // klik tombol dihitung sebagai interaksi pengguna
       }, 1200);
     });
   }
@@ -536,22 +544,63 @@
     gallerySlideCount = galleryImages.length;
   }
 
-  /** Buat tombol-tombol dot (satu per foto) di dalam #gallery-dots. */
+  /**
+   * Jumlah foto yang tampil sekaligus di slider.
+   * Mobile/tablet (< 1024px): 1 foto (perilaku lama, TIDAK berubah).
+   * Desktop (>= 1024px): 3 foto. Breakpoint HARUS sama dengan media query
+   * "Gallery Slider — Desktop" di style.css (paling bawah file).
+   */
+  const GALLERY_DESKTOP_QUERY = '(min-width: 1024px)';
+  const GALLERY_DESKTOP_VISIBLE = 3;
+
+  function getVisibleSlides() {
+    const isDesktop = window.matchMedia && window.matchMedia(GALLERY_DESKTOP_QUERY).matches;
+    return isDesktop ? Math.min(GALLERY_DESKTOP_VISIBLE, gallerySlideCount) : 1;
+  }
+
+  /** Indeks slide pertama terbesar yang masih menampilkan jendela penuh. */
+  function getMaxSlideIndex() {
+    return Math.max(0, gallerySlideCount - getVisibleSlides());
+  }
+
+  /**
+   * Buat tombol-tombol dot di dalam #gallery-dots.
+   * Mobile: satu dot per foto (sama seperti sebelumnya).
+   * Desktop: satu dot per "posisi" slider (jumlah foto - 3 + 1).
+   */
   function buildGalleryDots() {
     if (!dom.galleryDots) return;
     dom.galleryDots.innerHTML = '';
 
-    galleryImages.forEach((_, index) => {
+    const visible = getVisibleSlides();
+    const positions = getMaxSlideIndex() + 1;
+
+    for (let index = 0; index < positions; index += 1) {
       const dot = document.createElement('button');
       dot.type = 'button';
       dot.className = 'gallery-slider__dot';
       dot.setAttribute('role', 'tab');
-      dot.setAttribute('aria-label', `Lihat foto ${index + 1} dari ${gallerySlideCount}`);
+      dot.setAttribute(
+        'aria-label',
+        visible > 1
+          ? `Lihat foto ${index + 1} sampai ${index + visible} dari ${gallerySlideCount}`
+          : `Lihat foto ${index + 1} dari ${gallerySlideCount}`
+      );
       dot.addEventListener('click', () => goToSlide(index));
       dom.galleryDots.appendChild(dot);
-    });
+    }
 
     updateGalleryDots();
+  }
+
+  /**
+   * Status tombol Prev/Next. Hanya di desktop (3 foto) tombol dinonaktifkan
+   * di ujung slider; di mobile tombol tidak pernah dinonaktifkan (perilaku lama).
+   */
+  function updateGalleryNavState() {
+    const limitEnds = getVisibleSlides() > 1;
+    if (dom.galleryPrevBtn) dom.galleryPrevBtn.disabled = limitEnds && currentSlideIndex <= 0;
+    if (dom.galleryNextBtn) dom.galleryNextBtn.disabled = limitEnds && currentSlideIndex >= getMaxSlideIndex();
   }
 
   /** Tandai dot yang aktif (sesuai currentSlideIndex) dan update status teks a11y. */
@@ -564,24 +613,81 @@
       });
     }
     if (dom.galleryStatus) {
-      dom.galleryStatus.textContent = `Foto ${currentSlideIndex + 1} dari ${gallerySlideCount}`;
+      const visible = getVisibleSlides();
+      dom.galleryStatus.textContent = visible > 1
+        ? `Foto ${currentSlideIndex + 1}–${currentSlideIndex + visible} dari ${gallerySlideCount}`
+        : `Foto ${currentSlideIndex + 1} dari ${gallerySlideCount}`;
     }
+    updateGalleryNavState();
   }
 
   /**
-   * Geser track ke slide ke-`index` (dibatasi 0..gallerySlideCount-1).
+   * Animasi geser DESKTOP. scrollTo({behavior:'smooth'}) + scroll-snap sering
+   * terasa patah-patah (browser menganimasi lalu "menyentak" ke titik snap).
+   * Di sini snap dimatikan sementara (class .is-animating), posisi digerakkan
+   * per frame dengan easing, lalu snap dinyalakan lagi di posisi yang sudah
+   * pas sehingga tidak ada lompatan. Interaksi pengguna (wheel/sentuh/drag)
+   * membatalkan animasi agar tidak melawan gerakan tangan.
+   */
+  let trackAnimId = null;
+
+  function cancelTrackAnimation() {
+    if (trackAnimId !== null) {
+      window.cancelAnimationFrame(trackAnimId);
+      trackAnimId = null;
+    }
+    if (dom.gallerySliderTrack) dom.gallerySliderTrack.classList.remove('is-animating');
+  }
+
+  function animateTrackTo(target) {
+    const track = dom.gallerySliderTrack;
+    cancelTrackAnimation();
+    const start = track.scrollLeft;
+    const delta = target - start;
+    if (Math.abs(delta) < 1) return;
+
+    const duration = 520;
+    const t0 = window.performance.now();
+    track.classList.add('is-animating');
+
+    const step = (now) => {
+      const t = Math.min((now - t0) / duration, 1);
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; // easeInOutCubic
+      track.scrollLeft = start + delta * eased;
+      if (t < 1) {
+        trackAnimId = window.requestAnimationFrame(step);
+      } else {
+        trackAnimId = null;
+        track.scrollLeft = target;
+        track.classList.remove('is-animating');
+      }
+    };
+    trackAnimId = window.requestAnimationFrame(step);
+  }
+
+  /**
+   * Geser track ke slide ke-`index` (dibatasi 0..getMaxSlideIndex()).
+   * Mobile: batas = jumlah foto - 1 (sama seperti sebelumnya).
+   * Desktop: batas = jumlah foto - 3, agar jendela 3 foto selalu penuh.
    * Dipakai tombol Prev/Next, dot, dan keyboard panah.
    */
-  function goToSlide(index) {
+  function goToSlide(index, instant) {
     if (!dom.gallerySliderTrack || gallerySlideCount === 0) return;
-    const clamped = Math.max(0, Math.min(index, gallerySlideCount - 1));
+    const clamped = Math.max(0, Math.min(index, getMaxSlideIndex()));
     const slide = dom.gallerySliderTrack.children[clamped];
     if (!slide) return;
 
-    dom.gallerySliderTrack.scrollTo({
-      left: slide.offsetLeft,
-      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-    });
+    if (getVisibleSlides() > 1 && !instant && !prefersReducedMotion()) {
+      // Desktop (3 foto): animasi rAF sendiri agar mulus & tidak bentrok
+      // dengan scroll-snap (lihat animateTrackTo).
+      animateTrackTo(slide.offsetLeft);
+    } else {
+      cancelTrackAnimation();
+      dom.gallerySliderTrack.scrollTo({
+        left: slide.offsetLeft,
+        behavior: instant || prefersReducedMotion() ? 'auto' : 'smooth',
+      });
+    }
     // currentSlideIndex & dots akan ikut diperbarui oleh listener 'scroll'
     // (lihat handleSliderScroll), tapi diset langsung juga agar klik dot
     // beruntun terasa responsif tanpa menunggu event scroll selesai.
@@ -597,7 +703,7 @@
   function handleSliderScroll() {
     window.clearTimeout(scrollEndTimeoutId);
     scrollEndTimeoutId = window.setTimeout(() => {
-      if (!dom.gallerySliderTrack) return;
+      if (!dom.gallerySliderTrack || trackAnimId !== null) return;
       const trackLeft = dom.gallerySliderTrack.scrollLeft;
       let closestIndex = 0;
       let closestDistance = Infinity;
@@ -610,7 +716,7 @@
         }
       });
 
-      currentSlideIndex = closestIndex;
+      currentSlideIndex = Math.min(closestIndex, getMaxSlideIndex());
       updateGalleryDots();
     }, 120);
   }
@@ -625,8 +731,54 @@
       } else if (event.key === 'ArrowLeft') {
         event.preventDefault();
         goToSlide(currentSlideIndex - 1);
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        goToSlide(0);
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        goToSlide(getMaxSlideIndex());
       }
     });
+  }
+
+  /**
+   * Saat viewport melintasi breakpoint desktop (mis. resize/rotate), jumlah
+   * foto per tampilan berubah: bangun ulang dot, rapikan indeks aktif, lalu
+   * sejajarkan track tanpa animasi. Tidak berjalan selama ukuran tetap.
+   */
+  function initGalleryBreakpointWatch() {
+    if (!window.matchMedia) return;
+    const mql = window.matchMedia(GALLERY_DESKTOP_QUERY);
+    const onChange = () => {
+      buildGalleryDots();
+      goToSlide(currentSlideIndex, true);
+    };
+    if (mql.addEventListener) {
+      mql.addEventListener('change', onChange);
+    } else if (mql.addListener) {
+      mql.addListener(onChange); // Safari lama
+    }
+  }
+
+  /**
+   * Desktop saja: foto digeser cepat, jadi muat semua lebih awal (bukan
+   * lazy) dan decode di luar main thread — mencegah macet saat foto baru
+   * masuk layar. Mobile tidak disentuh (tetap loading="lazy").
+   */
+  function prepareGalleryImages() {
+    const imgs = dom.gallerySliderTrack.querySelectorAll('.gallery-slider__img');
+    const apply = () => {
+      if (getVisibleSlides() <= 1) return;
+      imgs.forEach((img) => {
+        img.loading = 'eager';
+        img.decoding = 'async';
+      });
+    };
+    apply();
+    if (window.matchMedia) {
+      const mql = window.matchMedia(GALLERY_DESKTOP_QUERY);
+      if (mql.addEventListener) mql.addEventListener('change', apply);
+    }
   }
 
   /**
@@ -649,13 +801,19 @@
       dom.galleryNextBtn.addEventListener('click', () => goToSlide(currentSlideIndex + 1));
     }
 
-    // Swipe/sentuh TIDAK butuh JS tambahan: track memakai CSS
+    // Swipe/sentuh/trackpad TIDAK butuh JS tambahan: track memakai CSS
     // `overflow-x: auto; scroll-snap-type: x mandatory;` (lihat style.css
-    // § Gallery Slider) sehingga browser menangani gesture sentuh secara
-    // native di semua perangkat (Android, iOS, desktop trackpad, dst).
+    // § Gallery Slider) sehingga browser menangani gesture secara native.
     dom.gallerySliderTrack.addEventListener('scroll', handleSliderScroll, { passive: true });
 
+    // Gerakan tangan pengguna membatalkan animasi tombol yang sedang berjalan.
+    ['wheel', 'touchstart', 'pointerdown'].forEach((evt) => {
+      dom.gallerySliderTrack.addEventListener(evt, cancelTrackAnimation, { passive: true });
+    });
+
+    prepareGalleryImages();
     initGalleryKeyboardNav();
+    initGalleryBreakpointWatch();
     initLightbox();
   }
 
@@ -750,51 +908,148 @@
   // ==========================================================================
 
   // ==========================================================================
-  // 11. AUDIO
+  // 11. AUDIO  (Modul Minggu 7 — TP-2 & TP-3)
   // --------------------------------------------------------------------------
-  // Musik gamelan latar. Tag <audio id="gamelan-audio"> saat ini di-comment
-  // di HTML; butuh file assets/audio/KeboGiro.mp3 agar aktif.
+  // Musik gamelan latar + widget melayang (#audio-widget, lihat index.html [02]).
+  //
+  // ALUR:
+  //   1. Tamu klik "Buka Undangan" -> initOpeningCurtain() memanggil
+  //      attemptAutoplayAudio() LANGSUNG di handler klik (bypass kebijakan
+  //      autoplay browser, termasuk iOS Safari).
+  //   2. playAudio() memutar dengan volume 0 lalu fade-in perlahan.
+  //      Promise play() ditangani: jika diblokir/gagal, state tetap "paused"
+  //      dan tamu bisa menekan tombol widget secara manual.
+  //   3. Tombol widget = toggle play/pause. State dikelola variabel
+  //      isAudioPlaying dan disinkronkan ke tombol lewat class
+  //      "playing"/"paused", aria-pressed, dan aria-label dinamis.
+  //      State "paused" menampilkan ikon musik DICORET (lihat style.css).
+  //
+  // File audio: assets/audio/Kebo Giro.mp3 (atau KeboGiro.mp3), MP3 < 1MB.
   // ==========================================================================
 
-  let isAudioPlaying = false; // status pemutaran audio
+  let isAudioPlaying = false;      // status pemutaran (sumber kebenaran UI)
+  let audioFadeId = null;          // ID requestAnimationFrame fade aktif
+  const AUDIO_TARGET_VOLUME = 0.7; // volume akhir musik latar (0..1)
+  const AUDIO_FADE_IN_MS = 2000;   // lama fade-in saat mulai
+  const AUDIO_FADE_OUT_MS = 400;   // lama fade-out saat dijeda
 
-  /** Coba putar otomatis setelah "Buka Undangan" diklik. Jika diblokir, tamu putar manual. */
-  function attemptAutoplayAudio() {
+  /**
+   * Ubah volume audio bertahap ke `target` selama `duration` ms.
+   * Pemanggilan baru membatalkan fade sebelumnya (termasuk onDone-nya).
+   * Catatan: iOS Safari mengabaikan audio.volume (selalu 1), jadi di sana
+   * fade tidak terdengar tetapi tidak menimbulkan error.
+   */
+  function fadeAudioTo(target, duration, onDone) {
     if (!dom.audioEl) return;
-    dom.audioEl
-      .play()
-      .then(() => {
-        isAudioPlaying = true;
-        updateAudioButtonState();
-      })
-      .catch(() => {
+    if (audioFadeId !== null) {
+      window.cancelAnimationFrame(audioFadeId);
+      audioFadeId = null;
+    }
+    const from = dom.audioEl.volume;
+    const t0 = window.performance.now();
+
+    const step = (now) => {
+      const t = Math.min((now - t0) / duration, 1);
+      dom.audioEl.volume = Math.max(0, Math.min(1, from + (target - from) * t));
+      if (t < 1) {
+        audioFadeId = window.requestAnimationFrame(step);
+      } else {
+        audioFadeId = null;
+        if (onDone) onDone();
+      }
+    };
+    audioFadeId = window.requestAnimationFrame(step);
+  }
+
+  /** Putar musik dengan fade-in. Aman dari penolakan autoplay (Promise ditangani). */
+  function playAudio() {
+    if (!dom.audioEl) return;
+    if (dom.audioEl.paused) dom.audioEl.volume = 0; // mulai senyap lalu naik perlahan
+
+    const onStarted = () => {
+      isAudioPlaying = true;
+      updateAudioButtonState();
+      fadeAudioTo(AUDIO_TARGET_VOLUME, AUDIO_FADE_IN_MS);
+    };
+
+    let result;
+    try {
+      result = dom.audioEl.play();
+    } catch (err) {
+      result = Promise.reject(err);
+    }
+
+    if (result && typeof result.then === 'function') {
+      result.then(onStarted).catch((err) => {
+        // Autoplay diblokir browser atau file audio belum tersedia.
+        console.warn('Audio tidak dapat diputar:', err);
         isAudioPlaying = false;
+        dom.audioEl.volume = AUDIO_TARGET_VOLUME;
         updateAudioButtonState();
       });
+    } else {
+      onStarted(); // browser lama: play() tidak mengembalikan Promise
+    }
   }
 
-  /** Sinkronkan aria-pressed tombol (juga dipakai CSS untuk animasi piringan). */
+  /** Jeda musik dengan fade-out singkat. UI langsung berubah ke state "paused". */
+  function pauseAudio() {
+    if (!dom.audioEl) return;
+    isAudioPlaying = false;
+    updateAudioButtonState();
+    fadeAudioTo(0, AUDIO_FADE_OUT_MS, () => {
+      dom.audioEl.pause();
+    });
+  }
+
+  /** Dipanggil saat tombol "Buka Undangan" diklik (lihat initOpeningCurtain). */
+  function attemptAutoplayAudio() {
+    playAudio();
+  }
+
+  /**
+   * Sinkronkan tombol dengan state: class playing/paused, aria-pressed
+   * (dibaca CSS), dan aria-label dinamis untuk pembaca layar.
+   */
   function updateAudioButtonState() {
     if (!dom.audioBtn) return;
+    dom.audioBtn.classList.toggle('playing', isAudioPlaying);
+    dom.audioBtn.classList.toggle('paused', !isAudioPlaying);
     dom.audioBtn.setAttribute('aria-pressed', String(isAudioPlaying));
+    dom.audioBtn.setAttribute('aria-label', isAudioPlaying ? 'Jeda Musik Latar' : 'Putar Musik Latar');
   }
 
-  /** Tombol audio: toggle play/pause. */
+  /** Tombol audio: toggle play/pause + sinkron dengan kontrol sistem (media key, dll). */
   function initAudioController() {
     if (!dom.audioBtn || !dom.audioEl) return;
 
+    updateAudioButtonState();
+
     dom.audioBtn.addEventListener('click', () => {
       if (isAudioPlaying) {
-        dom.audioEl.pause();
-        isAudioPlaying = false;
+        pauseAudio();
       } else {
-        dom.audioEl.play().catch(() => {
-          /* File audio belum tersedia di assets/audio/KeboGiro.mp3 */
-        });
-        isAudioPlaying = true;
+        playAudio();
       }
-      updateAudioButtonState();
     });
+
+    // Jika audio dijeda/diputar dari luar widget (tombol media, headset),
+    // ikon ikut menyesuaikan.
+    dom.audioEl.addEventListener('pause', () => {
+      if (isAudioPlaying) {
+        isAudioPlaying = false;
+        updateAudioButtonState();
+      }
+    });
+    dom.audioEl.addEventListener('play', () => {
+      if (!isAudioPlaying) {
+        isAudioPlaying = true;
+        updateAudioButtonState();
+      }
+    });
+    dom.audioEl.addEventListener('error', () => {
+      console.warn('File audio tidak ditemukan di assets/audio/ (Kebo Giro.mp3 / KeboGiro.mp3).');
+    }, true);
   }
 
   // ==========================================================================

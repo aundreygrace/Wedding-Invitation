@@ -109,15 +109,40 @@
   </div>
 </div>
 
-<!-- [02] TOMBOL MUSIK MENGAMBANG (Audio Controller)
-     Tombol fixed pojok kanan-bawah utk play/stop musik gamelan.
-     CSS : style.css § .audio-controller
-     JS  : initAudioController(), attemptAutoplayAudio(), updateAudioButtonState()
-     NONAKTIF: tag <audio> di bawah di-comment. Untuk aktifkan: (1) taruh file
-     di assets/audio/Kebo Giro.mp3, (2) hapus komentar pembungkus <audio>.
-     Tanpa ini tombol tetap tampil tapi tidak berfungsi (dom.audioEl = null). -->
-<aside class="audio-controller" aria-label="Pemutar Musik Gamelan">
-  <button class="audio-controller__btn" id="audio-controller-btn" type="button" aria-label="Putar atau Hentikan Gamelan Musik Pengiring" aria-pressed="false">
+<!-- ==========================================================================
+     FLOATING AUDIO PLAYER WIDGET  (Modul Minggu 7 — TP-2 & TP-3)
+     ==========================================================================
+     [02] TOMBOL MUSIK MENGAMBANG (Audio Controller)
+     Widget fixed pojok kanan-bawah untuk memutar/menjeda musik gamelan.
+     CSS : style.css § .audio-controller (Bagian 6) + § "Revisi Minggu 7 —
+           Audio Widget" (paling bawah file: ikon dicoret, pulse ring)
+     JS  : script.js § 11 — playAudio(), pauseAudio(), updateAudioButtonState(),
+           fadeAudioTo() (fade-in/out), initAudioController()
+
+     STATE TOMBOL (diatur JS, dibaca CSS):
+       class "paused"  + aria-pressed="false" → musik berhenti: ikon not musik
+                                                DICORET garis miring
+       class "playing" + aria-pressed="true"  → musik berputar: ikon utuh,
+                                                piringan berputar + pulse ring
+       aria-label berubah dinamis: "Putar Musik Latar" / "Jeda Musik Latar"
+
+     Kebijakan autoplay browser: audio TIDAK autoplay dari atribut HTML.
+     Pemutaran dipicu dari klik tombol "Buka Undangan" (script.js §
+     initOpeningCurtain) lalu volume dinaikkan perlahan (fade-in).
+
+     FILE AUDIO: taruh di assets/audio/ (MP3 < 1MB, 128kbps). Dua nama file
+     dicoba berurutan: "Kebo Giro.mp3" lalu "KeboGiro.mp3".
+     ========================================================================== -->
+<aside class="audio-controller" id="audio-widget" aria-label="Pemutar Musik Gamelan">
+  <!-- Tag audio HTML5 (tanpa autoplay bawaan) -->
+  <audio id="gamelan-audio" loop preload="auto">
+    <source src="assets/audio/Kebo%20Giro.mp3" type="audio/mpeg" />
+    <source src="assets/audio/KeboGiro.mp3" type="audio/mpeg" />
+    Browser Anda tidak mendukung elemen audio.
+  </audio>
+
+  <!-- Tombol melayang Play / Pause (satu tombol, dua state) -->
+  <button class="audio-controller__btn paused" id="audio-controller-btn" type="button" aria-label="Putar Musik Latar" aria-pressed="false">
     <span class="audio-controller__disc">
       <span class="material-symbols-outlined" aria-hidden="true">music_note</span>
     </span>
@@ -126,8 +151,8 @@
       <span class="body-sm">Kebo Giro</span>
     </span>
   </button>
-  <!-- <audio id="gamelan-audio" src="assets/audio/Kebo Giro.mp3" loop preload="none"></audio> -->
 </aside>
+<!-- ======================= END FLOATING AUDIO PLAYER WIDGET ================= -->
 
 <!-- [03] TOAST NOTIFICATION
      Notifikasi mengambang (atas-tengah), default hidden, muncul sesaat saat

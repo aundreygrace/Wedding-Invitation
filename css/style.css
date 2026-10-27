@@ -2509,3 +2509,181 @@
     cursor: pointer;
   }
   button.map-card__external-link:disabled { opacity: 0.6; cursor: progress; }
+
+
+/* ==========================================================================
+   REVISI PEMBIMBING — GALERI & VIDEO (DESKTOP ONLY, >= 1024px)
+   --------------------------------------------------------------------------
+   Seluruh aturan di blok ini dibungkus media query desktop, sehingga tampilan
+   mobile/tablet (< 1024px) TIDAK berubah sama sekali. Breakpoint 1024px sama
+   dengan yang dipakai .location__grid (dua kolom) dan konstanta
+   GALLERY_DESKTOP_QUERY di script.js — ubah ketiganya bersamaan.
+
+   1) LEBAR: .gallery-slider & .video-wrapper memakai lebar container yang
+      sama persis dengan .location__grid (card Peta Lokasi + Tata Tertib):
+      64rem, lalu var(--content-max) di >= 1280px. Section-nya sama-sama
+      memakai .section (padding horizontal identik), jadi tepi kiri & kanan
+      otomatis sejajar.
+   2) SLIDER 3 FOTO: slide = (lebar track - 2 gap) / 3, geser 1 foto per klik
+      (logika di script.js § 9A).
+   ========================================================================== */
+@media (min-width: 1024px) {
+  /* --- 1) Lebar container sejajar dengan Peta Lokasi --- */
+  .gallery-slider {
+    width: 100%;
+    max-width: 64rem;
+  }
+  /* Video sedikit lebih kecil dari Galeri/Peta (permintaan revisi lanjutan),
+     tetap rasio 16:9 dan di tengah. */
+  .video-wrapper {
+    width: 100%;
+    max-width: 52rem;
+  }
+
+  /* --- 2) Galeri: 3 foto per tampilan --- */
+  .gallery-slider__track {
+    gap: 1rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: auto;      /* animasi digerakkan JS (animateTrackTo) */
+    overscroll-behavior-x: contain;
+    will-change: scroll-position;
+  }
+  /* Selama animasi tombol/titik: snap dimatikan sementara agar tidak patah */
+  .gallery-slider__track.is-animating { scroll-snap-type: none; }
+  .gallery-slider__slide {
+    flex: 0 0 calc((100% - 2rem) / 3); /* 3 kolom + 2 gap 1rem */
+    aspect-ratio: 4 / 5;
+    scroll-snap-align: start;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: var(--sogan-card);
+  }
+  /* Performa geser: tidak ada transisi/transform pada foto, tiap slide
+     punya layer sendiri. */
+  .gallery-slider__slide {
+    contain: layout paint;
+    transform: translateZ(0);
+  }
+  .gallery-slider__img {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+  .gallery-slider__caption {
+    font-size: 1rem;
+  }
+
+  /* Tombol prev/next: di tengah tinggi foto, menempel di tepi container */
+  .gallery-slider__nav {
+    width: 3rem;
+    height: 3rem;
+    backdrop-filter: none;
+    background: rgba(45, 26, 13, 0.92);
+    overflow: hidden; /* ikon tidak meluber jika font ikon gagal dimuat */
+  }
+  .gallery-slider__nav .material-symbols-outlined { font-size: 26px; }
+  .gallery-slider__nav--prev { left: 0.75rem; }
+  .gallery-slider__nav--next { right: 0.75rem; }
+  .gallery-slider__nav:disabled {
+    opacity: 0.35;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  /* Status "Foto 1–3 dari 5": lencana kecil di pojok kanan atas foto
+     (di mobile tetap tersembunyi, hanya untuk pembaca layar). */
+  .gallery-slider__status {
+    top: 0.75rem;
+    right: 0.75rem;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0.3rem 0.75rem;
+    overflow: visible;
+    clip: auto;
+    z-index: 5;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: var(--radius-full);
+    background: rgba(45, 26, 13, 0.92);
+    backdrop-filter: none;
+    color: var(--gold-foil);
+    font-size: var(--fs-label-caps);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    pointer-events: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .gallery-slider {
+    max-width: var(--content-max);
+  }
+  .video-wrapper {
+    max-width: 56rem;
+  }
+}
+
+
+
+/* ==========================================================================
+   REVISI MINGGU 7 — AUDIO WIDGET MELAYANG (TP-2)
+   --------------------------------------------------------------------------
+   Melengkapi § .audio-controller (Bagian 6). State dari script.js:
+     .paused  / aria-pressed="false" : musik berhenti -> ikon DICORET miring
+     .playing / aria-pressed="true"  : musik berputar -> piringan berputar
+                                       + efek pulse ring (mikro-interaksi)
+   ========================================================================== */
+.audio-controller__btn {
+  --slash-gap: var(--sogan-card);   /* warna "celah" di sekitar garis coret */
+}
+.audio-controller__btn:hover {
+  --slash-gap: var(--gold-bright);  /* sama dengan latar tombol saat hover */
+}
+@media (hover: none) {
+  .audio-controller__btn:hover { --slash-gap: var(--sogan-card); }
+}
+
+/* Piringan: berputar hanya saat playing; saat paused kembali tegak supaya
+   garis coret tetap diagonal yang rapi. */
+.audio-controller__disc { position: relative; }
+.audio-controller__btn.paused .audio-controller__disc { animation: none; }
+
+/* Garis miring (coretan) di atas ikon musik saat musik berhenti */
+.audio-controller__disc::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 72%;               /* sepanjang ikon, tidak keluar dari piringan */
+  height: 2px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+  box-shadow: 0 0 0 1px var(--slash-gap);
+  transform: translate(-50%, -50%) rotate(-45deg) scaleX(0);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+.audio-controller__btn.paused .audio-controller__disc::after {
+  transform: translate(-50%, -50%) rotate(-45deg) scaleX(1);
+  opacity: 1;
+}
+
+/* Efek riak (pulse ring) saat musik diputar */
+.audio-controller__btn.playing {
+  animation: pulse-ring 2s infinite;
+}
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 0 0 rgba(212, 175, 55, 0.55); }
+  70%  { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 0 14px rgba(212, 175, 55, 0); }
+  100% { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 0 0 rgba(212, 175, 55, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audio-controller__btn.playing { animation: none !important; }
+  .audio-controller__disc::after { transition: none !important; }
+}
