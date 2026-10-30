@@ -11,9 +11,17 @@
     curtain → audio-controller → toast → main
       → hero → intro-doa → couple → quote* → countdown → events → location
       → streaming* → story → gallery (slider, AKTIF) + lightbox → video (AKTIF)
-      → gift* → rsvp* → wishes* → closing
+      → gift (AKTIF, buka/tutup) → wishes* → closing
     (*) section NONAKTIF — dibungkus komentar HTML, tapi CSS & JS-nya tetap
         lengkap. Aktifkan dengan menghapus tag komentar pembungkusnya.
+
+  REVISI MINGGU 5 (Amplop Digital) — atas masukan pembimbing:
+    - #gift AKTIF, diletakkan tepat di bawah video dokumentasi.
+    - Nama bank ditulis sebagai TEKS (tanpa logo/ikon bank).
+    - Isi amplop (rekening + alamat kado) TERTUTUP di awal; tombol "Buka
+      Amplop Digital" membukanya dan tinggi section menyesuaikan.
+    - QRIS dihilangkan; hanya nomor rekening + tombol Salin.
+    - Section Konfirmasi Kehadiran (#rsvp) DIHAPUS: tinggal Gift & Buku Tamu.
 
   REVISI MODUL MINGGU 6 (Galeri Foto Interaktif & Sematan Video):
     - #gallery & #video sekarang AKTIF (dulu nonaktif/di-comment).
@@ -136,8 +144,8 @@
 <aside class="audio-controller" id="audio-widget" aria-label="Pemutar Musik Gamelan">
   <!-- Tag audio HTML5 (tanpa autoplay bawaan) -->
   <audio id="gamelan-audio" loop preload="auto">
-    <source src="assets/audio/Kebo%20Giro.mp3" type="audio/mpeg" />
-    <source src="assets/audio/KeboGiro.mp3" type="audio/mpeg" />
+    <source src="assets/audio/Kebo Giro.mp3" type="audio/mpeg" />
+    <source src="assets/audio/Kebo Giro.mp3" type="audio/mpeg" />
     Browser Anda tidak mendukung elemen audio.
   </audio>
 
@@ -156,9 +164,9 @@
 
 <!-- [03] TOAST NOTIFICATION
      Notifikasi mengambang (atas-tengah), default hidden, muncul sesaat saat
-     aksi berhasil (salin rekening, kirim RSVP).
+     aksi berhasil (salin rekening/alamat kado).
      CSS : style.css § .toast
-     JS  : showToast(message) — dipanggil dari copyToClipboard() & handleRsvpSubmit() -->
+     JS  : showToast(message) — dipanggil dari copyToClipboard() (bagian 12) -->
 <div class="toast" id="toast-notification" role="status" aria-live="polite">
   <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
   <span id="toast-message">Nomor rekening berhasil disalin!</span>
@@ -768,194 +776,203 @@
     </div>
   </section>
 
-  <!-- [15] KADO DIGITAL (Tanda Tresna Digital) — NONAKTIF
-       Kartu rekening bank + kartu alamat kado fisik, masing-masing ada tombol "Salin".
-       CSS : style.css § Gift / Bank cards
-       JS  : initCopyButtons(), copyToClipboard() — dipicu atribut
-             data-copy-value & data-copy-message di tiap tombol.
-       Tambah/ubah rekening: duplikasi <article class="bank-card">, ganti
-       nama bank, nomor tampilan (boleh pakai spasi), dan data-copy-value
-       (TANPA spasi — nilai mentah yang disalin), serta data-copy-message. -->
-  <section class="section gift" id="gift">
+  <!-- ==========================================================================
+       SECTION: AMPLOP DIGITAL / KADO  (Modul Minggu 5 + revisi pembimbing)
+       ==========================================================================
+       CSS : style.css § "REVISI PEMBIMBING — AMPLOP DIGITAL" (paling bawah)
+       JS  : script.js § 12 — initGiftToggle() (buka/tutup), initCopyButtons()
+             + copyToClipboard() (tombol Salin dengan umpan balik "Tersalin!")
+
+       POLA BUKA/TUTUP:
+         #gift-toggle  (button, aria-expanded)  -> mengatur class .is-open
+                                                   pada #gift-panel
+         #gift-content (isi: rekening + alamat) -> tertutup (tinggi 0, tidak
+                                                   bisa difokus keyboard) sampai
+                                                   .is-open ditambahkan.
+       CATATAN: JANGAN beri class .reveal-item pada elemen DI DALAM
+       #gift-content — saat tertutup elemen itu tidak pernah "terlihat" oleh
+       IntersectionObserver sehingga akan tetap transparan setelah dibuka.
+
+       TAMBAH/UBAH REKENING: duplikasi satu <article class="bank-card">, ganti
+       nama bank (TEKS saja, tanpa logo), nomor tampilan (boleh pakai spasi),
+       a.n., dan data-copy-value (TANPA spasi — nilai mentah yang disalin).
+       ========================================================================== -->
+  <section class="section gift" id="gift" aria-labelledby="gift-title">
     <div class="reveal-item delay-0 section-heading">
       <span class="label-caps section-heading__eyebrow">Kado &amp; Tanda Asih</span>
-      <!-- <h2 class="headline-lg section-heading__title">Tanda Tresna Digital</h2>
+      <h2 class="headline-lg section-heading__title" id="gift-title">Tanda Tresna Digital</h2>
       <div class="section-heading__rule" aria-hidden="true"></div>
       <p class="body-md section-heading__lead">
-        Doa restu panjenengan sedaya sampun dados kabingahan tumrap kula. Nanging bilih kersa maringi tanda tresna, saged lumantar rekening punika:
+        Doa restu panjenengan sedaya sampun dados kabingahan tumrap kula. Nanging bilih kersa maringi tanda tresna, saged lumantar rekening utawi alamat punika.
       </p>
     </div>
 
-    <div class="gift__grid">
-      <article class="reveal-item delay-100 bank-card">
-        <div>
-          <div class="bank-card__head">
-            <span class="headline-sm">BANK BCA</span>
-            <span class="material-symbols-outlined" aria-hidden="true">credit_card</span>
-          </div>
-          <p class="label-caps">Nomor Rekening</p>
-          <p class="headline-md bank-card__number">8830 5291 44</p>
-          <p class="body-sm">a.n. Arya Wicaksana</p>
-        </div>
-        <button class="btn btn--outline-gold" type="button" data-copy-value="8830529144" data-copy-message="Nomor rekening BCA berhasil disalin!">
-          <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
-          <span>Salin Nomor Rekening</span>
-        </button>
-      </article>
-
-      <article class="reveal-item delay-200 bank-card">
-        <div>
-          <div class="bank-card__head">
-            <span class="headline-sm">BANK MANDIRI</span>
-            <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
-          </div>
-          <p class="label-caps">Nomor Rekening</p>
-          <p class="headline-md bank-card__number">138 00 9482711 0</p>
-          <p class="body-sm">a.n. Sekar Arum</p>
-        </div>
-        <button class="btn btn--outline-gold" type="button" data-copy-value="1380094827110" data-copy-message="Nomor rekening Mandiri berhasil disalin!">
-          <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
-          <span>Salin Nomor Rekening</span>
-        </button>
-      </article>
-    </div>
-
-    <article class="reveal-item delay-300 address-card">
-      <div class="address-card__info">
-        <span class="address-card__icon">
-          <span class="material-symbols-outlined" aria-hidden="true">local_shipping</span>
-        </span>
-        <div>
-          <span class="label-caps">Kirim Kado Fisik</span>
-          <p class="headline-sm">Kediaman Arya &amp; Sekar</p>
-          <p class="body-sm">Jl. Slamet Riyadi No. 240, Laweyan, Surakarta, Jawa Tengah (57141)</p>
-        </div>
-      </div>
-      <button class="btn btn--outline-gold" type="button" data-copy-value="Kediaman Arya &amp; Sekar, Jl. Slamet Riyadi No. 240, Laweyan, Surakarta, Jawa Tengah (57141)" data-copy-message="Alamat pengiriman kado berhasil disalin!">
-        <span class="material-symbols-outlined" aria-hidden="true">pin_drop</span>
-        <span>Salin Alamat</span>
+    <div class="reveal-item delay-100 gift__panel" id="gift-panel">
+      <!-- Tombol pembuka/penutup amplop (state awal: tertutup) -->
+      <button class="btn btn--gold gift__toggle" id="gift-toggle" type="button" aria-expanded="false" aria-controls="gift-content">
+        <span class="material-symbols-outlined" aria-hidden="true">redeem</span>
+        <span class="gift__toggle-label">Buka Amplop Digital</span>
+        <span class="material-symbols-outlined gift__toggle-chevron" aria-hidden="true">expand_more</span>
       </button>
-    </article> -->
-  </section>
 
-  <!-- [16] RSVP — Konfirmasi Kehadiran — NONAKTIF
-       Form: nama, status hadir/ragu/tidak, jumlah tamu, ucapan/doa.
-       CSS : style.css § RSVP Form | JS : initRsvpForm(), handleRsvpSubmit()
-       PENTING: form ini TIDAK kirim ke server — submit cuma menambah kartu
-       baru ke #wishes-container secara LOKAL (hilang saat refresh). Untuk
-       RSVP sungguhan, sambungkan handleRsvpSubmit() ke backend (Google Apps
-       Script, Firebase, dll) — lihat script.js § 13.
-       Wajib: <form id="rsvp-form">, dan atribut name di tiap input
-       (name="attendance" utk radio group) agar terbaca handleRsvpSubmit(). -->
-  <section class="section rsvp" id="rsvp">
-    <div class="reveal-item delay-0 section-heading">
-      <span class="label-caps section-heading__eyebrow">Palapuran Rawuh</span>
-      <h2 class="headline-lg section-heading__title">Konfirmasi Kehadiran</h2>
-      <!-- <div class="section-heading__rule" aria-hidden="true"></div>
-      <p class="body-sm section-heading__lead">
-        Kagem nyamektakaken papan palenggahan lan dhaharan, nyuwun agunging sih kawigatosan Panjenengan kersaa ngisi formulir menika:
-      </p>
-    </div>
+      <!-- Isi amplop: tertutup di awal, ukuran section menyesuaikan saat dibuka -->
+      <div class="gift__collapse" id="gift-content" role="region" aria-labelledby="gift-toggle">
+        <div class="gift__collapse-inner">
+          <div class="gift__collapse-body">
 
-    <form class="reveal-item delay-100 rsvp-form" id="rsvp-form" novalidate>
-      <div class="form-field">
-        <label class="label-md" for="rsvp-name">Nama Lengkap Tamu</label>
-        <input class="form-input" id="rsvp-name" name="name" type="text" placeholder="Contoh: Bagus Santoso" required />
-      </div>
+            <div class="gift__grid">
+              <!-- Kartu rekening: nama bank berupa TEKS (tanpa logo) -->
+              <article class="bank-card">
+                <div>
+                  <div class="bank-card__head">
+                    <span class="headline-sm">BANK BCA</span>
+                  </div>
+                  <p class="label-caps">Nomor Rekening</p>
+                  <p class="headline-md bank-card__number">8830 5291 44</p>
+                  <p class="body-sm">a.n. Arya Wicaksana</p>
+                </div>
+                <button class="btn btn--outline-gold" type="button" data-copy-value="8830529144" data-copy-message="Nomor rekening BCA berhasil disalin!" aria-label="Salin nomor rekening BCA 8830 5291 44">
+                  <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
+                  <span class="btn__label">Salin Nomor Rekening</span>
+                </button>
+              </article>
 
-      <div class="form-field">
-        <span class="label-md">Konfirmasi Kehadiran</span>
-        <div class="attendance-toggle">
-          <label class="attendance-toggle__option">
-            <input type="radio" name="attendance" value="Hadir" checked />
-            <span>Hadir</span>
-          </label>
-          <label class="attendance-toggle__option">
-            <input type="radio" name="attendance" value="Masih Ragu" />
-            <span>Masih Ragu</span>
-          </label>
-          <label class="attendance-toggle__option">
-            <input type="radio" name="attendance" value="Tidak Hadir" />
-            <span>Tidak Hadir</span>
-          </label>
+              <article class="bank-card">
+                <div>
+                  <div class="bank-card__head">
+                    <span class="headline-sm">BANK MANDIRI</span>
+                  </div>
+                  <p class="label-caps">Nomor Rekening</p>
+                  <p class="headline-md bank-card__number">138 00 9482711 0</p>
+                  <p class="body-sm">a.n. Sekar Arum</p>
+                </div>
+                <button class="btn btn--outline-gold" type="button" data-copy-value="1380094827110" data-copy-message="Nomor rekening Mandiri berhasil disalin!" aria-label="Salin nomor rekening Mandiri 138 00 9482711 0">
+                  <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
+                  <span class="btn__label">Salin Nomor Rekening</span>
+                </button>
+              </article>
+            </div>
+
+            <!-- Alamat kirim kado fisik -->
+            <article class="address-card">
+              <div class="address-card__info">
+                <span class="address-card__icon">
+                  <span class="material-symbols-outlined" aria-hidden="true">local_shipping</span>
+                </span>
+                <div>
+                  <span class="label-caps">Kirim Kado Fisik</span>
+                  <p class="headline-sm">Kediaman Arya &amp; Sekar</p>
+                  <p class="body-sm">Jl. Slamet Riyadi No. 240, Laweyan, Surakarta, Jawa Tengah (57141)</p>
+                </div>
+              </div>
+              <button class="btn btn--outline-gold" type="button" data-copy-value="Kediaman Arya &amp; Sekar, Jl. Slamet Riyadi No. 240, Laweyan, Surakarta, Jawa Tengah (57141)" data-copy-message="Alamat pengiriman kado berhasil disalin!" aria-label="Salin alamat pengiriman kado">
+                <span class="material-symbols-outlined" aria-hidden="true">pin_drop</span>
+                <span class="btn__label">Salin Alamat</span>
+              </button>
+            </article>
+
+          </div>
         </div>
       </div>
-
-      <div class="form-field">
-        <label class="label-md" for="rsvp-count">Jumlah Tamu</label>
-        <select class="form-input" id="rsvp-count" name="guestCount">
-          <option value="1 Orang">1 Orang (Pribadi)</option>
-          <option value="2 Orang">2 Orang (Sarimbit / Berdua)</option>
-        </select>
-      </div>
-
-      <div class="form-field">
-        <label class="label-md" for="rsvp-wishes">Doa &amp; Ucapan Selamat</label>
-        <textarea class="form-input" id="rsvp-wishes" name="wishes" rows="4" placeholder="Tuliskan untaian doa dan ucapan selamat untuk kedua mempelai..."></textarea>
-      </div>
-
-      <button class="btn btn--gold rsvp-form__submit" type="submit">
-        <span class="material-symbols-outlined" aria-hidden="true">send</span>
-        <span>Kirim Konfirmasi</span>
-      </button>
-    </form> -->
+    </div>
   </section>
+  <!-- ======================= END SECTION: AMPLOP DIGITAL ====================== -->
 
-  <!-- [17] BUKU TAMU / WISHES (Pandonga) — NONAKTIF
-       Daftar ucapan/doa tamu. Kartu di #wishes-container ini contoh statis
-       (tetap tampil sbg "ucapan awal"); tiap submit RSVP (section 16)
-       menambah kartu baru DI ATASNYA (prepend), bukan mengganti.
-       CSS : style.css § Wishes / Guestbook
-       JS  : addWishCard(), getInitials(), escapeHtml() — dipanggil dari handleRsvpSubmit()
-       Ganti ucapan contoh: edit langsung tiap <article class="wish-card">,
-       atau hapus semua jika ingin daftar mulai kosong. -->
+  <!-- ==========================================================================
+       [16] BUKU TAMU / GUESTBOOK (Pandonga) — AKTIF, terintegrasi Google
+       Sheets via Google Apps Script (REST endpoint doGet/doPost).
+       ==========================================================================
+       CSS : style.css § "GUESTBOOK — Form & Feed" (dekat .wishes__list lama)
+       JS  : script.js § 13 — initGuestbookForm(), handleGuestbookSubmit(),
+             fetchGuestbookEntries(), renderGuestbookEntries(), escapeHtml()
+
+       WAJIB: isi GUESTBOOK_API_URL di script.js (bagian paling atas file,
+       setelah 'use strict') dengan URL Web App Apps Script hasil deployment
+       Panjenengan — tanpa itu form tetap tampil tapi tidak bisa kirim/ambil
+       data (ada pesan error otomatis di #guestbook-status).
+
+       STRUKTUR FORM (atribut name HARUS sama persis dgn e.parameter di
+       Apps Script Code.gs):
+         name="nama"       -> kolom NAMA
+         name="kehadiran"  -> kolom KEHADIRAN ("Hadir" / "Tidak Hadir")
+         name="pesan"      -> kolom PESAN
+       Tombol submit berubah ke mode loading ("Mengirimkan...") selama
+       fetch POST berjalan, lalu form di-reset dan daftar ucapan
+       (#wishes-container) diambil ulang (GET) agar ucapan baru langsung
+       muncul paling atas — TANPA reload halaman.
+       ========================================================================== -->
   <section class="section wishes" id="wishes">
     <div class="reveal-item delay-0 section-heading">
       <span class="label-caps section-heading__eyebrow">Untaian Doa Restu</span>
-      <h2 class="headline-lg section-heading__title">Buku Tamu &amp; Pandonga</h2>
-      <!-- <div class="section-heading__rule" aria-hidden="true"></div>
+      <h2 class="headline-lg section-heading__title">Buku Tamu &amp; Doa</h2>
+      <div class="section-heading__rule" aria-hidden="true"></div>
+      <p class="body-md section-heading__lead">
+        Dengan penuh rasa hormat dan bahagia, kami mengundang Anda untuk menyampaikan doa, ucapan selamat, serta konfirmasi kehadiran melalui formulir di bawah ini.
+      </p>
     </div>
 
-    <div class="reveal-item delay-100 wishes__list" id="wishes-container">
-      <article class="wish-card">
-        <div class="wish-card__head">
-          <div class="wish-card__who">
-            <span class="wish-card__avatar">S</span>
-            <h4 class="label-md">Soeryodiningrat</h4>
-          </div>
-          <span class="attendance-badge">Hadir</span>
-        </div>
-        <p class="body-sm">Nderek mangayubagya Mas Arya kaliyan Mbak Sekar. Mugi tansah pinaringan tentrem, bagya mulya, dados jodho donya dumugi akhirat. Rahayu sagung dumadi!</p>
-        <span class="wish-card__time label-caps">2 jam yang lalu</span>
-      </article>
+    <!-- Layout 2-kolom di desktop (sama pola dgn #events__grid): kolom KIRI
+         = daftar ucapan (.wishes__list), kolom KANAN = formulir
+         (.wishes__form). Urutan DOM TETAP form dulu baru daftar (supaya di
+         mobile/1-kolom tamu mengisi form dulu sebelum lihat daftar) — posisi
+         kiri/kanan di desktop diatur lewat CSS `order`, lihat style.css
+         § "Wishes — Layout 2 Kolom (Desktop)". -->
+    <div class="wishes__layout" id="wishes-layout">
 
-      <article class="wish-card">
-        <div class="wish-card__head">
-          <div class="wish-card__who">
-            <span class="wish-card__avatar">AK</span>
-            <h4 class="label-md">Anindya Kusuma</h4>
-          </div>
-          <span class="attendance-badge">Hadir</span>
+      <form class="reveal-item delay-100 guestbook-form wishes__form" id="guestbook-form" novalidate aria-describedby="guestbook-status">
+        <div class="form-field">
+          <label class="label-md" for="guestbook-name">Nama Lengkap</label>
+          <input class="form-input" id="guestbook-name" name="nama" type="text" maxlength="100" placeholder="Contoh: Bagus Santoso" required aria-required="true" />
         </div>
-        <p class="body-sm">Selamat menempuh hidup baru sahabatku tercinta Sekar dan Mas Arya. Semoga senantiasa dipenuhi cinta kasih, berkah, dan sakinah mawaddah warahmah.</p>
-        <span class="wish-card__time label-caps">5 jam yang lalu</span>
-      </article>
 
-      <article class="wish-card">
-        <div class="wish-card__head">
-          <div class="wish-card__who">
-            <span class="wish-card__avatar">BP</span>
-            <h4 class="label-md">Bambang Pranoto &amp; Keluarga</h4>
+        <div class="form-field">
+          <span class="label-md">Konfirmasi Kehadiran</span>
+          <div class="attendance-toggle attendance-toggle--binary">
+            <label class="attendance-toggle__option">
+              <input type="radio" name="kehadiran" value="Hadir" checked required />
+              <span>Hadir</span>
+            </label>
+            <label class="attendance-toggle__option">
+              <input type="radio" name="kehadiran" value="Tidak Hadir" />
+              <span>Tidak Hadir</span>
+            </label>
           </div>
-          <span class="attendance-badge">Hadir</span>
         </div>
-        <p class="body-sm">Sugeng mengku garwa Mas Arya &amp; Mbak Sekar. Mugi berkahing Gusti Allah tansah nglimpahi kulawarga enggal panjenengan berdua langgeng salaminya.</p>
-        <span class="wish-card__time label-caps">1 hari yang lalu</span>
-      </article>
-    </div> -->
+
+        <div class="form-field">
+          <label class="label-md" for="guestbook-message">Doa &amp; Ucapan Selamat</label>
+          <textarea class="form-input" id="guestbook-message" name="pesan" rows="4" maxlength="1000" placeholder="Tuliskan untaian doa dan ucapan selamat untuk kedua mempelai..." required aria-required="true"></textarea>
+        </div>
+
+        <!-- Umpan balik sukses/gagal — diisi JS, kosong & tersembunyi secara default -->
+        <p class="guestbook-status" id="guestbook-status" role="status" aria-live="polite"></p>
+
+        <!-- Tombol kirim: ikon pesawat (.guestbook-form__submit-icon) TIDAK
+             lagi berputar saat loading. Selama .is-loading aktif, ikon
+             disembunyikan & digantikan tiga titik berdenyut
+             (.guestbook-form__submit-dots) sebagai indikator "sedang
+             memproses" — lihat style.css § GUESTBOOK Form & Feed. -->
+        <button class="btn btn--gold guestbook-form__submit" id="guestbook-submit" type="submit">
+          <span class="material-symbols-outlined guestbook-form__submit-icon" aria-hidden="true">send</span>
+          <span class="guestbook-form__submit-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span class="guestbook-form__submit-label">Kirim Ucapan</span>
+        </button>
+      </form>
+
+      <!-- Feed ucapan — diisi & diperbarui JS (fetchGuestbookEntries()).
+           Mulai kosong (BUKAN data dummy); kartu dibangun dari respons GET
+           Google Apps Script. aria-live="polite" supaya pembaca layar tahu
+           saat daftar diperbarui. -->
+      <div class="reveal-item delay-200 wishes__list" id="wishes-container" aria-live="polite">
+        <p class="wishes__empty" id="wishes-empty">Belum ada ucapan. Jadilah yang pertama menyampaikan doa dan ucapan!</p>
+      </div>
+
+    </div>
   </section>
 
-  <!-- [18] PENUTUP (Closing / Matur Nuwun)
+  <!-- [17] PENUTUP (Closing / Matur Nuwun)
        Footer: ucapan terima kasih, salam, info kedua keluarga, tanda tangan nama.
        Pakai tag <footer> tapi class "section closing" biar warisi
        padding/layout sama seperti section lain.
@@ -971,20 +988,20 @@
       <img class="reveal-item delay-0 closing__emblem" src="assets/ornaments/03_gunungan.png" alt="Gunungan Wayang" />
       <h3 class="reveal-item delay-100 title-script closing__title">Terima Kasih</h3>
       <p class="reveal-item delay-100 body-md closing__lead">
-        <!-- Matur nuwun awit saking sih kawigatosan saha pandonga panjenengan sedaya ingkang sampun kepareng paring berkah ing pawiwahan punika.
+       Terima kasih atas perhatian, doa, dan ucapan yang telah Anda berikan. Kehadiran dan doa restu Anda menjadi kebahagiaan serta kenangan berharga bagi kami.
       </p>
       <p class="reveal-item delay-200 headline-sm closing__salam">Wassalamu'alaikum Warahmatullahi Wabarakatuh</p>
-      <span class="reveal-item delay-200 display-hero closing__dua">Mugi Rahayu Sagung Dumadi</span>
+      <span class="reveal-item delay-200 display-hero closing__dua">Semoga Kebahagiaan Menyertai Kita Semua</span>
 
       <div class="reveal-item delay-300 closing__families">
         <div class="closing__family">
-          <span class="label-caps">Kulawarga Mempelai Pria:</span>
+          <span class="label-caps">Keluarga Mempelai Pria:</span>
           <p class="headline-sm">Bpk. Surya Hadiningrat</p>
           <p class="body-sm">&amp; Ibu Endang Puspitasari</p>
         </div>
         <span class="closing__heart"><span class="material-symbols-outlined" aria-hidden="true">favorite</span></span>
         <div class="closing__family">
-          <span class="label-caps">Kulawarga Mempelai Wanita:</span>
+          <span class="label-caps">Keluarga Mempelai Wanita:</span>
           <p class="headline-sm">Bpk. Bambang Pranoto</p>
           <p class="body-sm">&amp; Ibu Sri Wardhani</p>
         </div>
@@ -992,9 +1009,9 @@
 
       <div class="reveal-item delay-300 closing__signature">
         <p class="display-hero">Arya &amp; Sekar</p>
-        <p class="label-caps">Surakarta Hadiningrat &bull; 2025</p>
+        <p class="label-caps">Kota Surakarta, Jawa Tengah &bull; 2026</p>
       </div>
-    </div> -->
+    </div> 
   </footer>
 
 </main>

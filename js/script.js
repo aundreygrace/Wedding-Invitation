@@ -15,43 +15,46 @@
      9.  GALERI (SLIDER) & LIGHTBOX  -> carousel foto + modal lightbox + navigasi
      10. VIDEO                -> iframe YouTube tersemat (responsif, tanpa JS khusus)
      11. AUDIO                -> musik gamelan latar
-     12. HADIAH DIGITAL       -> tombol salin rekening/alamat
-     13. RSVP                 -> form konfirmasi kehadiran
-     14. UCAPAN               -> kartu buku tamu
-     15. INISIALISASI         -> init() dan entry point
+     12. HADIAH DIGITAL       -> buka/tutup amplop digital + tombol salin rekening/alamat
+     13. BUKU TAMU (GUESTBOOK)-> form Hadir/Tidak Hadir + ucapan, terhubung
+                                 Google Sheets via Google Apps Script (REST)
+     14. INISIALISASI         -> init() dan entry point
 
    POLA PENULISAN:
      - initXxx()          : dipanggil sekali di init() untuk memasang listener.
      - Guard `if (!dom.xxx) return;` di awal fungsi membuat fitur aman
        dinonaktifkan: jika section HTML di-comment, fungsinya tidak error.
 
-   MENGAKTIFKAN SECTION YANG DI-COMMENT DI index.html
-   (Quote, Streaming, Gift, RSVP, Wishes):
+   MENGAKTIFKAN SECTION YANG DI-COMMENT DI index.html (Quote, Streaming):
      1. Hapus komentar HTML pada section terkait di index.html.
      2. script.js tidak perlu diubah; initXxx() sudah terdaftar di init().
-     3. Khusus Gift/Streaming: uncomment juga data `streaming`/`gift`
-        di bagian 1.
+     3. Khusus Streaming: uncomment juga data `streaming` di bagian 1.
+     (Gift & Wishes/Guestbook sudah AKTIF — tidak di-comment lagi. Section
+     RSVP terpisah SUDAH DIHAPUS atas permintaan pembimbing: konfirmasi
+     kehadiran sekarang jadi satu dengan form Guestbook di bagian 13.)
 
-   CATATAN REVISI (Minggu 6 — Galeri Foto Interaktif & Sematan Video):
-     - Section #gallery & #video SEKARANG AKTIF (sebelumnya nonaktif/di-comment).
-     - Atas revisi pembimbing: galeri TIDAK ditampilkan sebagai grid yang
-       menampilkan semua foto sekaligus, melainkan sebagai SLIDER/KARUSEL
-       (satu foto tampil penuh per waktu, geser via tombol/swipe/keyboard).
-       Lihat Bagian 9 -> initGallerySlider().
-     - REVISI LANJUTAN (desktop saja, >= 1024px): slider menampilkan 3 foto
-       sekaligus dan menggeser 1 foto per klik. Mobile/tablet tetap 1 foto.
-       Lihat getVisibleSlides() & getMaxSlideIndex() di Bagian 9A.
-     - Lightbox (modal pembesar foto) tetap dipertahankan sesuai modul
-       (TP-2): dibuka dari slide yang sedang aktif, lalu bisa navigasi
-       Next/Prev/Close ke SEMUA foto galeri, didukung tombol & keyboard
-       (Escape, ArrowLeft, ArrowRight). Lihat Bagian 9 -> initLightbox().
-     - Video (TP-3) memakai <iframe> YouTube yang responsif (rasio 16:9),
-       jadi TIDAK butuh logika JS play/pause custom lagi -> initVideoTeaser()
-       dihapus dari init() (lihat catatan di Bagian 10).
+   KONFIGURASI WAJIB — GUESTBOOK_API_URL (lihat tepat di bawah 'use strict'):
+     Isi dengan URL Web App hasil deploy Google Apps Script (lihat panduan
+     deployment yang diberikan terpisah). TANPA url ini, form Guestbook akan
+     menampilkan pesan error saat disubmit dan tidak bisa mengambil ucapan.
    ========================================================================== */
 
 (function () {
   'use strict';
+
+  // ==========================================================================
+  // KONFIGURASI GUESTBOOK — Google Apps Script Web App
+  // --------------------------------------------------------------------------
+  // WAJIB diisi manual setelah Panjenengan deploy Code.gs sebagai Web App
+  // (lihat panduan deployment terpisah). Tempel URL-nya di antara tanda
+  // kutip di bawah, contoh:
+  //   const GUESTBOOK_API_URL = 'https://script.google.com/macros/s/AKfycb.../exec';
+  // SENGAJA dikosongkan di sini — JANGAN mengarang/menebak URL. Selama masih
+  // kosong, form Guestbook tetap tampil tapi submit/ambil data akan gagal
+  // dengan pesan error yang jelas (lihat handleGuestbookSubmit() &
+  // fetchGuestbookEntries() di Bagian 13).
+  // ==========================================================================
+  const GUESTBOOK_API_URL = 'https://script.google.com/macros/s/AKfycbyAu49rv8f2iRYlBb2OASWzKrGfiTKgY4kpkFPOJCI-o03Qbu2pAeYYkTQbjkCPv76M/exec';
 
   // ==========================================================================
   // 1. DATA PERNIKAHAN
@@ -97,26 +100,16 @@
       },
     },
 
-    // Lokasi (dipakai initAddToCalendar, bagian 7)
+    // Lokasi (dipakai initAddToCalendar)
     location: {
       name: 'The Sunan Hotel Solo',
       address: 'Jl. A. Yani No.40, Kerten, Kec. Laweyan, Kota Surakarta, Jawa Tengah',
       mapsUrl: 'https://www.google.com/maps/search/?api=1&query=The%20Sunan%20Hotel%20Solo%2C%20Jl.%20A.%20Yani%20No.40%2C%20Kerten%2C%20Laweyan%2C%20Surakarta%2C%20Jawa%20Tengah',
     },
 
-    // NONAKTIF: uncomment bersamaan dengan section #streaming / #gift di HTML.
-    // Di luar cakupan modul Minggu 6 (Galeri & Video), jadi tetap nonaktif.
-    // gift.banks[].account harus sama dengan data-copy-value di tombol salin.
     streaming: {
       url: 'https://youtube.com',
-    },
-    /*gift: {
-      banks: [
-        { bank: 'BANK BCA', account: '8830529144', display: '8830 5291 44', holder: 'Arya Wicaksana' },
-        { bank: 'BANK MANDIRI', account: '1380094827110', display: '138 00 9482711 0', holder: 'Sekar Arum' },
-      ],
-      address: 'Kediaman Arya & Sekar, Jl. Slamet Riyadi No. 240, Laweyan, Surakarta, Jawa Tengah (57141)',
-    },*/
+    }
   };
 
   // ==========================================================================
@@ -171,8 +164,14 @@
     lightboxPrev: document.getElementById('lightbox-prev'),
     lightboxNext: document.getElementById('lightbox-next'),
 
-    // RSVP & ucapan (bagian 13-14)
-    rsvpForm: document.getElementById('rsvp-form'),
+    // Amplop digital (bagian 12): panel buka/tutup
+    giftPanel: document.getElementById('gift-panel'),
+    giftToggle: document.getElementById('gift-toggle'),
+
+    // Buku Tamu / Guestbook (bagian 13) — form + status + feed ucapan
+    guestbookForm: document.getElementById('guestbook-form'),
+    guestbookStatus: document.getElementById('guestbook-status'),
+    guestbookSubmitBtn: document.getElementById('guestbook-submit'),
     wishesContainer: document.getElementById('wishes-container'),
   };
 
@@ -196,20 +195,27 @@
     }, 3000);
   }
 
-  /** Salin teks ke clipboard (API modern, fallback ke fallbackCopy). */
-  function copyToClipboard(text, message) {
+  /**
+   * Salin teks ke clipboard (API modern, fallback ke fallbackCopy).
+   * `onSuccess` (opsional) dipanggil setelah berhasil — dipakai tombol Salin
+   * untuk menampilkan umpan balik "Tersalin!".
+   */
+  function copyToClipboard(text, message, onSuccess) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard
         .writeText(text)
-        .then(() => showToast(message))
-        .catch(() => fallbackCopy(text, message));
+        .then(() => {
+          showToast(message);
+          if (onSuccess) onSuccess();
+        })
+        .catch(() => fallbackCopy(text, message, onSuccess));
     } else {
-      fallbackCopy(text, message);
+      fallbackCopy(text, message, onSuccess);
     }
   }
 
   /** Fallback salin untuk browser lama: textarea tersembunyi + execCommand. */
-  function fallbackCopy(text, message) {
+  function fallbackCopy(text, message, onSuccess) {
     const el = document.createElement('textarea');
     el.value = text;
     el.setAttribute('readonly', '');
@@ -224,6 +230,7 @@
     }
     document.body.removeChild(el);
     showToast(message);
+    if (onSuccess) onSuccess();
   }
 
   /** Ambil maksimal 2 inisial huruf kapital. Contoh: "Bambang Pranoto" -> "BP". */
@@ -929,9 +936,11 @@
 
   let isAudioPlaying = false;      // status pemutaran (sumber kebenaran UI)
   let audioFadeId = null;          // ID requestAnimationFrame fade aktif
-  const AUDIO_TARGET_VOLUME = 0.7; // volume akhir musik latar (0..1)
-  const AUDIO_FADE_IN_MS = 2000;   // lama fade-in saat mulai
-  const AUDIO_FADE_OUT_MS = 400;   // lama fade-out saat dijeda
+  let hasAudioEverPlayed = false;  // sudah pernah mulai diputar sekali? (lihat playAudio())
+  const AUDIO_TARGET_VOLUME = 0.7;  // volume akhir musik latar (0..1)
+  const AUDIO_FADE_IN_MS = 100;    // lama fade-in HANYA saat PERTAMA KALI diputar (buka undangan)
+  const AUDIO_RESUME_FADE_MS = 700; // lama fade singkat saat musik DILANJUTKAN setelah dijeda manual
+  const AUDIO_FADE_OUT_MS = 600;    // lama fade-out saat dijeda
 
   /**
    * Ubah volume audio bertahap ke `target` selama `duration` ms.
@@ -961,15 +970,39 @@
     audioFadeId = window.requestAnimationFrame(step);
   }
 
-  /** Putar musik dengan fade-in. Aman dari penolakan autoplay (Promise ditangani). */
+  /**
+   * Putar musik. Aman dari penolakan autoplay (Promise ditangani).
+   *
+   * BUGFIX (revisi pembimbing — "lagu kayak mundur beberapa detik saat
+   * di-pause lalu diputar lagi"): audio.pause()/.play() TIDAK pernah
+   * mengubah currentTime (lagu selalu lanjut dari posisi terakhir — itu
+   * bawaan HTMLMediaElement), tapi kode lama men-set volume = 0 lalu
+   * fade-in PELAN (2 detik) SETIAP KALI playAudio() dipanggil — termasuk
+   * saat tombol widget ditekan lagi setelah dijeda manual. Dua detik nyaris
+   * tanpa suara itu membuat pendengar merasa lagu "meloncat mundur" karena
+   * bagian lagu yang terdengar begitu suara kembali normal terasa asing.
+   * FIX: fade-in PELAN dari senyap HANYA pada pemutaran PERTAMA KALI (saat
+   * tombol "Buka Undangan" di curtain memicu attemptAutoplayAudio()).
+   * Resume berikutnya (tombol widget musik) pakai fade SINGKAT dari volume
+   * saat ini ke volume target — currentTime tetap melanjutkan, tanpa jeda
+   * senyap yang terasa seperti "restart".
+   */
   function playAudio() {
     if (!dom.audioEl) return;
-    if (dom.audioEl.paused) dom.audioEl.volume = 0; // mulai senyap lalu naik perlahan
+    const isFirstPlay = !hasAudioEverPlayed;
+    if (isFirstPlay && dom.audioEl.paused) {
+      dom.audioEl.volume = 0; // hanya pemutaran pertama: mulai senyap lalu naik perlahan
+    }
 
     const onStarted = () => {
       isAudioPlaying = true;
+      hasAudioEverPlayed = true;
       updateAudioButtonState();
-      fadeAudioTo(AUDIO_TARGET_VOLUME, AUDIO_FADE_IN_MS);
+      if (isFirstPlay) {
+        fadeAudioTo(AUDIO_TARGET_VOLUME, AUDIO_FADE_IN_MS);
+      } else {
+        fadeAudioTo(AUDIO_TARGET_VOLUME, AUDIO_RESUME_FADE_MS);
+      }
     };
 
     let result;
@@ -1053,12 +1086,59 @@
   }
 
   // ==========================================================================
-  // 12. HADIAH DIGITAL
+  // 12. HADIAH DIGITAL / AMPLOP DIGITAL  (Modul Minggu 5 + revisi pembimbing)
   // --------------------------------------------------------------------------
-  // Section #gift (saat ini di-comment, di luar cakupan modul Minggu 6).
-  // Berlaku untuk tombol apa pun dengan atribut data-copy-value="TEKS" dan
-  // opsional data-copy-message="PESAN_TOAST".
+  // Section #gift (index.html). Dua fitur:
+  //   A) initGiftToggle()  — isi amplop (rekening + alamat) TERTUTUP di awal;
+  //      tombol #gift-toggle membuka/menutupnya. Animasi tinggi diatur CSS
+  //      (class .is-open pada #gift-panel); JS hanya mengatur state & ARIA.
+  //   B) initCopyButtons() — tombol apa pun dengan data-copy-value="TEKS"
+  //      (opsional data-copy-message="PESAN_TOAST") menyalin lewat Clipboard
+  //      API. Tombol memberi umpan balik "Tersalin!" selama 2 detik.
   // ==========================================================================
+
+  const COPY_FEEDBACK_MS = 2000; // lama teks "Tersalin!" tampil di tombol
+
+  /** Buka/tutup panel amplop dan sinkronkan aria-expanded + label tombol. */
+  function setGiftOpen(isOpen) {
+    if (!dom.giftPanel || !dom.giftToggle) return;
+    dom.giftPanel.classList.toggle('is-open', isOpen);
+    dom.giftToggle.setAttribute('aria-expanded', String(isOpen));
+    const label = dom.giftToggle.querySelector('.gift__toggle-label');
+    if (label) label.textContent = isOpen ? 'Tutup Amplop Digital' : 'Buka Amplop Digital';
+  }
+
+  /** Pasang listener tombol buka/tutup amplop (state awal: tertutup). */
+  function initGiftToggle() {
+    if (!dom.giftPanel || !dom.giftToggle) return;
+    setGiftOpen(false);
+    dom.giftToggle.addEventListener('click', () => {
+      setGiftOpen(!dom.giftPanel.classList.contains('is-open'));
+    });
+  }
+
+  /**
+   * Umpan balik tombol Salin: teks -> "Tersalin!", ikon -> centang, warna
+   * hijau (class .is-copied) lalu kembali normal setelah COPY_FEEDBACK_MS.
+   * Klik beruntun tidak menumpuk timer.
+   */
+  function showCopyFeedback(btn) {
+    const label = btn.querySelector('.btn__label');
+    const icon = btn.querySelector('.material-symbols-outlined');
+    if (label && btn._origLabel === undefined) btn._origLabel = label.textContent;
+    if (icon && btn._origIcon === undefined) btn._origIcon = icon.textContent;
+
+    window.clearTimeout(btn._copyTimer);
+    btn.classList.add('is-copied');
+    if (label) label.textContent = 'Tersalin!';
+    if (icon) icon.textContent = 'check';
+
+    btn._copyTimer = window.setTimeout(() => {
+      btn.classList.remove('is-copied');
+      if (label) label.textContent = btn._origLabel;
+      if (icon) icon.textContent = btn._origIcon;
+    }, COPY_FEEDBACK_MS);
+  }
 
   /** Pasang listener salin pada semua elemen [data-copy-value]. */
   function initCopyButtons() {
@@ -1067,109 +1147,256 @@
       btn.addEventListener('click', () => {
         const value = btn.getAttribute('data-copy-value');
         const message = btn.getAttribute('data-copy-message') || 'Berhasil disalin!';
-        copyToClipboard(value, message);
+        copyToClipboard(value, message, () => showCopyFeedback(btn));
       });
     });
   }
 
   // ==========================================================================
-  // 13. RSVP
+  // 13. BUKU TAMU (GUESTBOOK) — integrasi Google Sheets via Google Apps Script
   // --------------------------------------------------------------------------
-  // Section #rsvp (saat ini di-comment, di luar cakupan modul Minggu 6).
-  // PENTING: data TIDAK dikirim ke server; ucapan hilang saat halaman
-  // di-refresh. Untuk penyimpanan permanen, kirim data ke backend (mis.
-  // fetch ke Google Apps Script/Firebase) di handleRsvpSubmit().
+  // Section #wishes: form #guestbook-form (nama, kehadiran Hadir/Tidak
+  // Hadir, pesan) + feed #wishes-container. Google Sheets adalah SATU-
+  // SATUNYA sumber data (tidak ada localStorage/data dummy).
+  //
+  // Alur:
+  //   initGuestbookForm()      -> pasang listener submit, lalu panggil
+  //                                fetchGuestbookEntries() sekali saat load
+  //                                (guard: butuh GUESTBOOK_API_URL terisi)
+  //   handleGuestbookSubmit()  -> validasi (checkValidity), kirim POST
+  //                                (FormData, TANPA reload) ke Apps Script,
+  //                                tombol -> mode loading, lalu sukses/gagal
+  //   fetchGuestbookEntries()  -> GET daftar terbaru, render skeleton dulu
+  //   renderGuestbookEntries() -> bangun kartu ucapan dari respons JSON,
+  //                                escapeHtml() di tiap field (anti-XSS)
+  //
+  // PENTING: nama field FormData ("nama", "kehadiran", "pesan") HARUS sama
+  // persis dengan e.parameter yang dibaca Code.gs (doPost) di Apps Script —
+  // dan HARUS sama dengan urutan kolom Google Sheets: TIMESTAMP | NAMA |
+  // KEHADIRAN | PESAN (TIMESTAMP diisi otomatis oleh Apps Script, bukan JS).
   // ==========================================================================
 
   /**
-   * Proses submit form RSVP: validasi nama, ambil ucapan & kehadiran,
-   * tambah kartu ucapan, tampilkan toast, lalu reset form.
+   * Tampilkan/kosongkan pesan status (sukses/gagal) di bawah form Guestbook.
+   * @param {string} message - kosongkan ('') untuk menyembunyikan lagi.
+   * @param {'success'|'error'|null} type
    */
-  function handleRsvpSubmit(event) {
+  function setGuestbookStatus(message, type) {
+    if (!dom.guestbookStatus) return;
+    dom.guestbookStatus.textContent = message;
+    dom.guestbookStatus.classList.remove('guestbook-status--success', 'guestbook-status--error');
+    if (type === 'success' || type === 'error') {
+      dom.guestbookStatus.classList.add('guestbook-status--' + type);
+    }
+    dom.guestbookStatus.classList.toggle('is-visible', Boolean(message));
+  }
+
+  /** Alihkan tombol submit ke mode loading ("Mengirimkan...") atau normal. */
+  function setGuestbookLoading(isLoading) {
+    if (!dom.guestbookSubmitBtn) return;
+    dom.guestbookSubmitBtn.disabled = isLoading;
+    dom.guestbookSubmitBtn.classList.toggle('is-loading', isLoading);
+    const label = dom.guestbookSubmitBtn.querySelector('.guestbook-form__submit-label');
+    if (label) label.textContent = isLoading ? 'Sedang mengirim...' : 'Kirim Ucapan';
+  }
+
+  let isGuestbookSubmitting = false;
+
+  /**
+   * Proses submit form Guestbook: intersepsi reload (e.preventDefault()),
+   * validasi HTML5 native, kirim POST ke Apps Script via FormData (TANPA
+   * header Content-Type manual — supaya tetap "simple request" & lolos CORS
+   * default Apps Script tanpa perlu preflight OPTIONS), lalu tangani
+   * sukses/gagal dan segarkan daftar ucapan.
+   */
+  function handleGuestbookSubmit(event) {
     event.preventDefault();
+    if (!dom.guestbookForm) return;
 
-    const nameInput = document.getElementById('rsvp-name');
-    const wishesInput = document.getElementById('rsvp-wishes');
-    const attendanceChoice = document.querySelector('input[name="attendance"]:checked');
+    // Guard anti-duplikat: abaikan event 'submit' kedua selama proses
+    // pengiriman pertama belum selesai (lihat catatan `isGuestbookSubmitting`).
+    if (isGuestbookSubmitting) return;
 
-    // Nama wajib diisi
-    if (!nameInput || !nameInput.value.trim()) {
-      nameInput && nameInput.focus();
+    if (!GUESTBOOK_API_URL) {
+      setGuestbookStatus(
+        'Guestbook belum terhubung ke server. Tempel URL Web App Google Apps Script pada GUESTBOOK_API_URL di script.js.',
+        'error'
+      );
       return;
     }
 
-    const name = nameInput.value.trim();
-    const wishes = wishesInput && wishesInput.value.trim()
-      ? wishesInput.value.trim()
-      : 'Mugi tansah pinaringan berkah lan karahayon.'; // ucapan default
-    const attendance = attendanceChoice ? attendanceChoice.value : 'Hadir';
+    // Validasi bawaan HTML5 (required, dsb.) — fokuskan & tampilkan pesan
+    // native browser pada field pertama yang belum valid.
+    if (!dom.guestbookForm.checkValidity()) {
+      dom.guestbookForm.reportValidity();
+      return;
+    }
 
-    addWishCard({ name, wishes, attendance });
-    showToast('Matur nuwun! Konfirmasi kehadiran Panjenengan sampun katampi.');
-    event.target.reset();
+    const formData = new FormData(dom.guestbookForm);
+    isGuestbookSubmitting = true;
+    setGuestbookLoading(true);
+    setGuestbookStatus('', null);
+
+    fetch(GUESTBOOK_API_URL, { method: 'POST', body: formData })
+      .then((response) => response.json())
+      .then((result) => {
+        if (result && result.result === 'success') {
+          setGuestbookStatus('Terima kasih! Ucapan dan doa Anda telah berhasil kami terima.', 'success');
+          dom.guestbookForm.reset();
+          fetchGuestbookEntries();
+        } else {
+          setGuestbookStatus((result && result.message) || 'Gagal mengirim ucapan. Silakan coba kembali.', 'error');
+        }
+      })
+      .catch(() => {
+        setGuestbookStatus('Gagal terhubung ke server. Silakan periksa koneksi internet Anda.', 'error');
+      })
+      .finally(() => {
+        isGuestbookSubmitting = false;
+        setGuestbookLoading(false);
+      });
   }
 
-  /** Pasang handler submit pada form RSVP. */
-  function initRsvpForm() {
-    if (!dom.rsvpForm) return;
-    dom.rsvpForm.addEventListener('submit', handleRsvpSubmit);
+  /** Tampilkan beberapa kartu skeleton selagi menunggu respons GET pertama. */
+  function renderGuestbookSkeleton() {
+    if (!dom.wishesContainer) return;
+    dom.wishesContainer.innerHTML =
+      '<div class="wish-skeleton" aria-hidden="true"></div>' +
+      '<div class="wish-skeleton" aria-hidden="true"></div>' +
+      '<div class="wish-skeleton" aria-hidden="true"></div>';
   }
 
-  // ==========================================================================
-  // 14. UCAPAN (Buku Tamu)
-  // --------------------------------------------------------------------------
-  // Section #wishes (saat ini di-comment, di luar cakupan modul Minggu 6).
-  // Kartu awal di HTML bersifat statis; fungsi di sini hanya menambah
-  // kartu baru.
-  // ==========================================================================
+  /** Format ISO timestamp dari Apps Script jadi label tanggal berbahasa Indonesia. */
+  function formatWishTimestamp(isoString) {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) return '';
+    try {
+      return date.toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (err) {
+      return '';
+    }
+  }
 
   /**
-   * Buat kartu ucapan baru dan sisipkan di paling atas daftar.
-   * Animasi masuk: mulai dari opacity 0 lalu diubah di frame berikutnya
-   * (requestAnimationFrame) agar transisi terlihat.
-   * Input pengguna di-escape lewat escapeHtml() untuk mencegah XSS.
-   * @param {{name: string, wishes: string, attendance: string}} entry
+   * Render ulang seluruh daftar ucapan dari data Google Sheets (array hasil
+   * doGet). Server (Code.gs) sudah mengurutkan dari terbaru -> terlama lewat
+   * unshift(), jadi di sini TIDAK disortir ulang — urutan respons dipakai
+   * apa adanya. Semua teks dari pengguna (nama/pesan) di-escape lewat
+   * escapeHtml() sebelum masuk innerHTML untuk mencegah XSS.
+   * @param {Array<{timestamp:string,nama:string,kehadiran:string,pesan:string}>} entries
    */
-  function addWishCard({ name, wishes, attendance }) {
+  function renderGuestbookEntries(entries) {
     if (!dom.wishesContainer) return;
+    dom.wishesContainer.innerHTML = '';
 
-    const card = document.createElement('article');
-    card.className = 'wish-card';
-    card.style.opacity = '0';
-    card.style.transform = 'scale(0.95)';
-    card.style.transition = 'opacity 500ms, transform 500ms';
+    if (!entries || entries.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'wishes__empty';
+      empty.id = 'wishes-empty';
+      empty.textContent = 'Belum ada ucapan. Jadilah yang pertama menyampaikan doa dan ucapan!';
+      dom.wishesContainer.appendChild(empty);
+      return;
+    }
 
-    const initials = getInitials(name);
+    entries.forEach((entry) => {
+      const name = (entry && entry.nama) || 'Tamu Undangan';
+      const attendance = (entry && entry.kehadiran) || 'Hadir';
+      const message = (entry && entry.pesan) || '';
+      const timeLabel = formatWishTimestamp(entry && entry.timestamp);
+      const initials = getInitials(name);
+      const badgeModifier = attendance === 'Tidak Hadir' ? ' attendance-badge--tidak-hadir' : '';
 
-    card.innerHTML = `
-      <div class="wish-card__head">
-        <div class="wish-card__who">
-          <span class="wish-card__avatar">${initials}</span>
-          <h4 class="label-md">${escapeHtml(name)}</h4>
-        </div>
-        <span class="attendance-badge">${escapeHtml(attendance)}</span>
-      </div>
-      <p class="body-sm">${escapeHtml(wishes)}</p>
-      <span class="wish-card__time label-caps">Baru saja</span>
-    `;
+      const card = document.createElement('article');
+      card.className = 'wish-card';
+      card.innerHTML =
+        '<div class="wish-card__head">' +
+          '<div class="wish-card__who">' +
+            '<span class="wish-card__avatar">' + escapeHtml(initials) + '</span>' +
+            '<h4 class="label-md">' + escapeHtml(name) + '</h4>' +
+          '</div>' +
+          '<span class="attendance-badge' + badgeModifier + '">' + escapeHtml(attendance) + '</span>' +
+        '</div>' +
+        '<p class="body-sm">' + escapeHtml(message) + '</p>' +
+        (timeLabel ? '<span class="wish-card__time label-caps">' + escapeHtml(timeLabel) + '</span>' : '');
 
-    dom.wishesContainer.prepend(card);
-
-    window.requestAnimationFrame(() => {
-      card.style.opacity = '1';
-      card.style.transform = 'scale(1)';
+      dom.wishesContainer.appendChild(card);
     });
+  }
+
+  // Menyimpan permintaan GET #wishes-container yang sedang berjalan, supaya
+  // kalau fetchGuestbookEntries() dipanggil lagi sebelum yang sebelumnya
+  // selesai (mis. GET awal saat halaman dimuat masih lambat/cold-start Apps
+  // Script, lalu user langsung kirim ucapan sehingga GET kedua menyusul),
+  // permintaan LAMA dibatalkan via AbortController. Dengan begitu hanya
+  // SATU respons yang pernah dipakai me-render ulang daftar — mencegah
+  // respons "basi" yang datang belakangan menimpa/membuat daftar terasa
+  // tidak konsisten (render ganda/berkedip) saat dua permintaan tumpang
+  // tindih.
+  let guestbookFetchController = null;
+
+  /**
+   * Ambil daftar ucapan terbaru dari Apps Script (HTTP GET) lalu render ke
+   * #wishes-container. Dipanggil saat halaman dimuat & setiap kali submit
+   * Guestbook berhasil, supaya feed selalu seketika/real-time tanpa reload.
+   */
+  function fetchGuestbookEntries() {
+    if (!dom.wishesContainer || !GUESTBOOK_API_URL) return;
+
+    if (guestbookFetchController) {
+      guestbookFetchController.abort();
+    }
+    const controller = new AbortController();
+    guestbookFetchController = controller;
+
+    renderGuestbookSkeleton();
+
+    fetch(GUESTBOOK_API_URL, { method: 'GET', signal: controller.signal })
+      .then((response) => response.json())
+      .then((result) => {
+        if (controller.signal.aborted) return; // sudah digantikan permintaan lebih baru
+        if (result && result.result === 'success') {
+          renderGuestbookEntries(result.data || []);
+        } else {
+          renderGuestbookEntries([]);
+        }
+      })
+      .catch((err) => {
+        if (err && err.name === 'AbortError') return; // dibatalkan sengaja, bukan error sungguhan
+        if (!dom.wishesContainer) return;
+        dom.wishesContainer.innerHTML =
+          '<p class="wishes__empty">Gagal mengambil ucapan dari server. Silakan muat ulang halaman ini.</p>';
+      });
+  }
+
+  /** Pasang listener submit & ambil daftar ucapan pertama kali. */
+  function initGuestbookForm() {
+    if (!dom.guestbookForm) return;
+    dom.guestbookForm.addEventListener('submit', handleGuestbookSubmit);
+
+    if (!GUESTBOOK_API_URL) {
+      // Tanpa URL API: tampilkan state kosong statis, jangan fetch apa pun.
+      renderGuestbookEntries([]);
+      return;
+    }
+    fetchGuestbookEntries();
   }
 
   /** Escape karakter HTML pada teks input pengguna (mis. "<b>" -> "&lt;b&gt;"). */
   function escapeHtml(str) {
     const div = document.createElement('div');
-    div.textContent = str;
+    div.textContent = str == null ? '' : String(str);
     return div.innerHTML;
   }
 
   // ==========================================================================
-  // 15. INISIALISASI
+  // 14. INISIALISASI
   // --------------------------------------------------------------------------
   // Titik masuk tunggal. Untuk fitur baru: buat initFiturBaru() dengan
   // guard `if (!dom.xxx) return;`, lalu panggil di init() di bawah.
@@ -1187,8 +1414,9 @@
     initAddToCalendar();   // bagian 7
     initGallerySlider();   // bagian 9 (juga memanggil initLightbox() di dalamnya)
     initAudioController(); // bagian 11
+    initGiftToggle();      // bagian 12 (buka/tutup amplop digital)
     initCopyButtons();     // bagian 12
-    initRsvpForm();        // bagian 13
+    initGuestbookForm();   // bagian 13 (form Guestbook + feed Google Sheets)
 
     // Jika halaman sudah `is-unlocked` saat dimuat (mis. testing tanpa sampul),
     // jalankan scroll-reveal langsung.

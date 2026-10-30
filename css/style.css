@@ -1,4 +1,3 @@
-
 /* ==========================================================================
    STYLE.CSS — Undangan Pernikahan Digital "Royal Javanese Elegance"
    ==========================================================================
@@ -725,9 +724,10 @@
        Gallery Slider  #gallery         karusel foto (AKTIF, Minggu 6)
        Lightbox        modal galeri, child <main> (bukan section)
        Video           #video           iframe YouTube (AKTIF, Minggu 6)
-       Gift            #gift            nomor rekening — nonaktif
-       RSVP Form       #rsvp            form konfirmasi — nonaktif
-       Wishes          #wishes          buku tamu — nonaktif
+       Gift            #gift            amplop digital (AKTIF, accordion)
+       Wishes          #wishes          buku tamu / Guestbook (AKTIF,
+                                         form + feed terhubung Google
+                                         Sheets via Google Apps Script)
        Closing         #closing         <footer> penutup
 
      Section yang nonaktif di index.html (dibungkus komentar HTML) tetap
@@ -1731,13 +1731,37 @@
   .address-card__info .body-sm { color: rgba(238, 223, 204, 0.8); }
   .address-card .btn { white-space: nowrap; width: auto; }
 
-  /* --- RSVP Form — NONAKTIF (markup di-comment) ---
-     Form #rsvp-form: nama, hadir/ragu/tidak (.attendance-toggle, radio
-     custom-styled), jumlah tamu, ucapan. Submit ditangani script.js →
-     handleRsvpSubmit(): validasi nama, lalu addWishCard() ke buku tamu —
-     TANPA kirim ke server (in-memory, hilang saat refresh). Untuk
-     persistensi sungguhan, sambungkan ke backend sendiri. */
-  .rsvp-form {
+  /* --- GUESTBOOK — Form & Feed (AKTIF — integrasi Google Sheets/Apps Script) ---
+     Form #guestbook-form: nama, kehadiran (.attendance-toggle--binary, 2
+     opsi: Hadir/Tidak Hadir), pesan. Submit ditangani script.js →
+     handleGuestbookSubmit(): fetch POST (FormData) ke GUESTBOOK_API_URL,
+     tombol masuk mode loading (.is-loading), lalu fetchGuestbookEntries()
+     (GET) menyegarkan #wishes-container TANPA reload halaman. */
+  /* --- Wishes — Layout 2 Kolom (Desktop) ---
+     Pola sama dengan .events__grid: 1 kolom (stack) di mobile, 2 kolom
+     sejajar di layar lebar. DOM tetap <form> dulu baru <div id="wishes-
+     container"> (supaya di mobile tamu mengisi form dulu sebelum lihat
+     daftar); khusus ≥1024px, `order` di-swap agar DAFTAR UCAPAN tampil di
+     KIRI dan FORMULIR di KANAN. */
+  .wishes__layout {
+    width: 100%;
+    max-width: 68rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  @media (min-width: 1024px) {
+    .wishes__layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+      gap: 2.5rem;
+    }
+    .wishes__form { order: 2; }  /* formulir -> kanan */
+    .wishes__list { order: 1; }  /* daftar ucapan -> kiri */
+  }
+
+  .guestbook-form {
     max-width: 42rem;
     width: 100%;
     background: var(--sogan-card);
@@ -1748,6 +1772,16 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+  /* Di dalam layout 2 kolom (desktop), formulir & daftar mengisi penuh
+     lebar kolom grid-nya masing-masing, bukan dibatasi max-width lama. */
+  @media (min-width: 1024px) {
+    .wishes__layout .guestbook-form,
+    .wishes__layout .wishes__list {
+      max-width: none;
+      margin-bottom: 0;
+    }
   }
   .form-field { display: flex; flex-direction: column; gap: 0.5rem; }
   .form-field .label-md {
@@ -1773,14 +1807,19 @@
     border-color: var(--gold-bright);
     box-shadow: 0 0 0 1px var(--gold-bright);
   }
+  .form-input:user-invalid { border-color: #e07a5f; }
   textarea.form-input { resize: vertical; }
 
+  /* Toggle kehadiran generik (dipakai berapa pun jumlah opsinya) */
   .attendance-toggle {
     display: grid;
     grid-template-columns: 1fr;
     gap: 0.75rem;
   }
   @media (min-width: 640px) { .attendance-toggle { grid-template-columns: repeat(3, 1fr); } }
+  /* Modifier khusus Guestbook: hanya 2 opsi (Hadir / Tidak Hadir) */
+  .attendance-toggle--binary { grid-template-columns: 1fr; }
+  @media (min-width: 480px) { .attendance-toggle--binary { grid-template-columns: repeat(2, 1fr); } }
   .attendance-toggle__option {
     display: flex;
     align-items: center;
@@ -1809,17 +1848,80 @@
     font-weight: 700;
   }
 
-  .rsvp-form__submit {
+  /* Umpan balik sukses/gagal (#guestbook-status). Kosong & tak memakan
+     ruang secara default; muncul begitu JS mengisi textContent + class
+     .is-visible (lihat setGuestbookStatus() di script.js). */
+  .guestbook-status {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .guestbook-status.is-visible { display: flex; }
+  .guestbook-status--success {
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    color: var(--gold-bright);
+  }
+  .guestbook-status--error {
+    background: rgba(224, 122, 95, 0.12);
+    border: 1px solid rgba(224, 122, 95, 0.5);
+    color: #e07a5f;
+  }
+
+  .guestbook-form__submit {
     width: 100%;
     justify-content: center;
     padding: 1rem;
     margin-top: 0.5rem;
   }
+  /* Mode loading: tombol nonaktif secara visual. Revisi pembimbing: ikon
+     pesawat (.guestbook-form__submit-icon) TIDAK BERPUTAR lagi — selama
+     loading ikon disembunyikan & digantikan tiga titik berdenyut
+     (.guestbook-form__submit-dots), bukan animasi spin. */
+  .guestbook-form__submit.is-loading {
+    opacity: 0.85;
+    cursor: progress;
+    pointer-events: none;
+  }
+  .guestbook-form__submit.is-loading .guestbook-form__submit-icon {
+    display: none;
+  }
 
-  /* --- Wishes / Guestbook — NONAKTIF (markup di-comment) ---
-     Daftar ucapan (.wish-card). Entri baru dari RSVP di-prepend script.js
-     → addWishCard(), dengan animasi fade+scale-in. Avatar inisial
-     (.wish-card__avatar) dari getInitials(). */
+  /* Indikator loading titik-titik — tersembunyi secara default, hanya
+     tampil saat tombol dalam mode .is-loading (gantinya ikon pesawat). */
+  .guestbook-form__submit-dots {
+    display: none;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .guestbook-form__submit.is-loading .guestbook-form__submit-dots {
+    display: inline-flex;
+  }
+  .guestbook-form__submit-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: currentColor;
+    animation: guestbookDotPulse 1.1s ease-in-out infinite;
+  }
+  .guestbook-form__submit-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .guestbook-form__submit-dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes guestbookDotPulse {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.75); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+
+  /* --- Wishes / Guestbook Feed (AKTIF) ---
+     Daftar ucapan (.wish-card), dibangun dari respons GET Apps Script oleh
+     renderGuestbookEntries() di script.js — BUKAN data statis. Input
+     pengguna (nama/pesan) selalu di-escape lewat escapeHtml() sebelum
+     disisipkan ke DOM (proteksi XSS). */
   .wishes__list {
     max-width: 48rem;
     width: 100%;
@@ -1830,6 +1932,12 @@
     overflow-y: auto;
     padding-right: 0.5rem;
   }
+  .wishes__empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: rgba(238, 223, 204, 0.6);
+    font-size: var(--fs-body-sm);
+  }
   .wish-card {
     background: var(--sogan-card);
     border: 1px solid rgba(212, 175, 55, 0.2);
@@ -1837,6 +1945,11 @@
     padding: 1.25rem;
     box-shadow: var(--shadow-standard);
     transition: opacity 500ms, transform 500ms;
+    animation: fadeInCard 400ms ease-out;
+  }
+  @keyframes fadeInCard {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   .wish-card__head {
     display: flex;
@@ -1845,7 +1958,7 @@
     margin-bottom: 0.5rem;
     gap: 0.75rem;
   }
-  .wish-card__who { display: flex; align-items: center; gap: 0.75rem; }
+  .wish-card__who { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
   .wish-card__avatar {
     width: 2rem;
     height: 2rem;
@@ -1871,6 +1984,14 @@
     color: var(--gold-bright);
     border: 1px solid rgba(212, 175, 55, 0.3);
     white-space: nowrap;
+    flex-shrink: 0;
+  }
+  /* Varian warna lencana kehadiran — "Hadir" tetap emas, "Tidak Hadir" diberi
+     aksen merah muda-kusam supaya beda sekilas tanpa merusak tema. */
+  .attendance-badge--tidak-hadir {
+    background: rgba(224, 122, 95, 0.12);
+    color: #e07a5f;
+    border-color: rgba(224, 122, 95, 0.4);
   }
   .wish-card p.body-sm { color: rgba(238, 223, 204, 0.8); }
   .wish-card__time {
@@ -1879,6 +2000,26 @@
     color: rgba(212, 175, 55, 0.6);
   }
 
+  /* Skeleton loader — ditampilkan sesaat sebelum data GET pertama datang
+     (renderGuestbookSkeleton() di script.js), menggantikan kartu sungguhan. */
+  .wish-skeleton {
+    height: 4.5rem;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(
+      100deg,
+      rgba(212, 175, 55, 0.08) 20%,
+      rgba(212, 175, 55, 0.18) 40%,
+      rgba(212, 175, 55, 0.08) 60%
+    );
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes skeletonShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* --- Closing --- */
   /* --- Closing --- */
   .closing {
     padding-top: var(--space-2xl);
@@ -1972,7 +2113,7 @@
      ========================================================================== */
 
   /* ==========================================================================
-     9. FORMS — see RSVP section above
+     9. FORMS — see Guestbook form section above (§ "GUESTBOOK — Form & Feed")
      ========================================================================== */
 
   /* ==========================================================================
@@ -2008,6 +2149,13 @@
      `delay-N` untuk jeda) ke elemen HTML tsb — tidak perlu kode JS tambahan.
      ========================================================================== */
   @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Putaran cepat — dipakai ikon tombol submit Guestbook saat .is-loading
+     (beda dari spin-slow yang dipakai disk audio gamelan). */
+  @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
@@ -2128,7 +2276,8 @@
 
     .audio-controller__disc,
     .streaming__icon .material-symbols-outlined,
-    .map-card__pin {
+    .map-card__pin,
+    .guestbook-form__submit-dots span {
       animation: none !important;
     }
 
@@ -2268,12 +2417,12 @@
   .event-card,
   .rules-card,
   .bank-card,
-  .rsvp-form { padding: 1.5rem 1.25rem; border-radius: var(--radius-lg); }
+  .guestbook-form { padding: 1.5rem 1.25rem; border-radius: var(--radius-lg); }
   @media (min-width: 400px) {
-    .event-card, .rules-card, .bank-card, .rsvp-form { padding: 1.75rem 1.5rem; border-radius: var(--radius-xl); }
+    .event-card, .rules-card, .bank-card, .guestbook-form { padding: 1.75rem 1.5rem; border-radius: var(--radius-xl); }
   }
   @media (min-width: 640px) {
-    .event-card, .rules-card, .bank-card, .rsvp-form { padding: 2rem; }
+    .event-card, .rules-card, .bank-card, .guestbook-form { padding: 2rem; }
   }
   .events__grid, .location__grid, .gift__grid { gap: 1.25rem; }
   @media (min-width: 768px) { .events__grid, .location__grid, .gift__grid { gap: 2rem; } }
@@ -2379,7 +2528,7 @@
   .address-card .btn { width: 100%; white-space: normal; }
   @media (min-width: 640px) { .address-card .btn { width: auto; white-space: nowrap; } }
 
-  /* --- RSVP form: 16px inputs stop iOS from zooming, comfy tap targets --- */
+  /* --- Guestbook form: 16px inputs stop iOS from zooming, comfy tap targets --- */
   .form-input { font-size: 1rem; padding: 0.8rem 1rem; min-height: 48px; }
   @media (min-width: 640px) { .form-input { font-size: var(--fs-body-sm); } }
   select.form-input { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--gold-bright) 50%), linear-gradient(135deg, var(--gold-bright) 50%, transparent 50%); background-position: calc(100% - 1.25rem) 55%, calc(100% - 0.9rem) 55%; background-size: 0.4rem 0.4rem, 0.4rem 0.4rem; background-repeat: no-repeat; padding-right: 2.5rem; }
@@ -2389,6 +2538,11 @@
   @media (min-width: 400px) { .attendance-toggle__option { font-size: var(--fs-body-sm); letter-spacing: 0.05em; padding: 0.75rem; } }
   @media (min-width: 640px) { .attendance-toggle { gap: 0.75rem; } }
   .attendance-toggle__option:has(input:focus-visible) { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+  /* Guestbook cuma 2 opsi (Hadir/Tidak Hadir) — paksa 2 kolom, menimpa
+     aturan 3-kolom generik di atas (keduanya sama spesifisitas, jadi
+     urutan-lah yang menentukan; override ini SENGAJA diletakkan setelahnya). */
+  .attendance-toggle--binary { grid-template-columns: 1fr; }
+  @media (min-width: 400px) { .attendance-toggle--binary { grid-template-columns: repeat(2, 1fr); } }
 
   /* --- Wishes --- */
   .wishes__list { max-height: min(30rem, 70vh); padding-right: 0.25rem; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
@@ -2647,6 +2801,20 @@
   .audio-controller__btn:hover { --slash-gap: var(--sogan-card); }
 }
 
+/* FIX: saat hover, bg tombol berubah jadi gold-bright (lihat § .audio-
+   controller__btn:hover di Bagian 6), tapi teks "Gending" (.label-caps)
+   punya warna gold-bright yang di-hardcode dan piringan punya background
+   tint emas — keduanya jadi nyaris tak terlihat di atas bg emas terang.
+   Override di sini supaya keduanya ikut menyesuaikan jadi gelap (sogan-deep)
+   agar tetap kontras, sama seperti teks "Kebo Giro" & ikon yang sudah
+   mengikuti `color` tombol lewat inheritance. */
+.audio-controller__btn:hover .audio-controller__text .label-caps {
+  color: var(--sogan-deep);
+}
+.audio-controller__btn:hover .audio-controller__disc {
+  background: rgba(45, 26, 13, 0.18);
+}
+
 /* Piringan: berputar hanya saat playing; saat paused kembali tegak supaya
    garis coret tetap diagonal yang rapi. */
 .audio-controller__disc { position: relative; }
@@ -2686,4 +2854,87 @@
 @media (prefers-reduced-motion: reduce) {
   .audio-controller__btn.playing { animation: none !important; }
   .audio-controller__disc::after { transition: none !important; }
+}
+
+
+/* ==========================================================================
+   REVISI PEMBIMBING — AMPLOP DIGITAL (BUKA / TUTUP)
+   --------------------------------------------------------------------------
+   Melengkapi § Gift / Bank cards (Bagian 7). Perilaku dikendalikan class
+   .is-open pada #gift-panel (script.js § 12 -> initGiftToggle).
+
+   - Tertutup : hanya tombol "Buka Amplop Digital" yang terlihat, section ringkas.
+   - Terbuka  : isi (rekening + alamat) muncul, tinggi section menyesuaikan.
+   Teknik tinggi: grid-template-rows 0fr -> 1fr (animasi tinggi tanpa JS
+   dan tanpa menebak tinggi konten). visibility:hidden saat tertutup membuat
+   tombol Salin di dalamnya TIDAK bisa difokus lewat keyboard / pembaca layar.
+   ========================================================================== */
+.gift__panel {
+  width: 100%;
+  max-width: 56rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.gift__toggle {
+  max-width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+.gift__toggle-chevron { transition: transform 300ms ease; }
+.gift__panel.is-open .gift__toggle-chevron { transform: rotate(180deg); }
+
+.gift__collapse {
+  width: 100%;
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: 0;
+  visibility: hidden;
+  transition: grid-template-rows 350ms ease, margin-top 350ms ease, visibility 0s linear 350ms;
+}
+.gift__panel.is-open .gift__collapse {
+  grid-template-rows: 1fr;
+  margin-top: 2rem;
+  visibility: visible;
+  transition: grid-template-rows 350ms ease, margin-top 350ms ease, visibility 0s;
+}
+.gift__collapse-inner { min-height: 0; overflow: hidden; }
+/* Ruang kecil agar bayangan kartu tidak terpotong oleh overflow:hidden */
+.gift__collapse-body {
+  padding: 0.25rem 0.25rem 1.5rem;
+  /* Revisi pembimbing: animasikan isi amplop (rekening & alamat) saat
+     dibuka — fade-in + sedikit naik, BUKAN langsung muncul bersamaan
+     animasi tinggi grid-template-rows di atas. Delay 150ms supaya fade
+     dimulai setelah panel mulai melebar, terasa lebih alami. Saat
+     tertutup, fade keluar lebih cepat & tanpa delay. */
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 250ms ease, transform 250ms ease;
+}
+.gift__panel.is-open .gift__collapse-body {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 400ms ease 150ms, transform 400ms ease 150ms;
+}
+.gift__collapse-body .gift__grid { margin-left: auto; margin-right: auto; }
+.gift__collapse-body .address-card { margin-left: auto; margin-right: auto; }
+
+/* Nama bank hanya teks (tanpa logo): beri aksen garis emas tipis di bawahnya */
+.bank-card__head { margin-bottom: 1rem; }
+.bank-card__head .headline-sm { color: var(--gold-bright); }
+
+/* Umpan balik tombol Salin: hijau + "Tersalin!" selama 2 detik */
+.btn--outline-gold.is-copied,
+.btn--outline-gold.is-copied:hover {
+  background: #3f7d4e;
+  border-color: #3f7d4e;
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gift__collapse,
+  .gift__panel.is-open .gift__collapse,
+  .gift__toggle-chevron,
+  .gift__collapse-body,
+  .gift__panel.is-open .gift__collapse-body { transition: none; opacity: 1; transform: none; }
 }
