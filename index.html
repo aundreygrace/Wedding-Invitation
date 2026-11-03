@@ -172,10 +172,76 @@
   <span id="toast-message">Nomor rekening berhasil disalin!</span>
 </div>
 
-<!-- ======================= KONTEN UTAMA — TANPA NAVBAR =======================
-     Semua konten dibaca linear lewat scroll (storytelling scroll), tidak ada
-     menu navigasi. Tiap <section> langsung di bawah <main> WAJIB pakai class
-     dasar "section" + 1 class unik per-section (styling di style.css § WEDDING SECTIONS).
+<!-- [03b] NAVBAR BAWAH MENGAMBANG (Floating Bottom Navbar)
+     Tersembunyi secara default; baru tampil setelah undangan dibuka (JS
+     menambah class body.is-unlocked — sama persis dengan mekanisme yang
+     sudah ada untuk membuka scroll, lihat initOpeningCurtain() di
+     script.js). Tiap <a data-nav-link href="#id-section"> memakai anchor
+     native + html{scroll-behavior:smooth} (sudah ada di style.css) jadi
+     klik langsung smooth-scroll tanpa JS tambahan untuk itu.
+     CSS : style.css § "Navbar Bawah Mengambang" (Bagian 6, dekat .toast)
+     JS  : script.js § 5b — initBottomNav() (indikator section aktif) -->
+<nav class="bottom-nav" id="bottom-nav" aria-label="Navigasi Undangan">
+  <div class="bottom-nav__track" id="bottom-nav-track">
+    <a class="bottom-nav__item" data-nav-link href="#couple">
+      <span class="material-symbols-outlined bottom-nav__icon" aria-hidden="true">favorite</span>
+      <span class="bottom-nav__label">Mempelai</span>
+    </a>
+    <a class="bottom-nav__item" data-nav-link href="#countdown">
+      <span class="material-symbols-outlined bottom-nav__icon" aria-hidden="true">hourglass_bottom</span>
+      <span class="bottom-nav__label">Hitung Mundur</span>
+    </a>
+    <a class="bottom-nav__item" data-nav-link href="#events">
+      <span class="material-symbols-outlined bottom-nav__icon" aria-hidden="true">event</span>
+      <span class="bottom-nav__label">Acara</span>
+    </a>
+    <a class="bottom-nav__item" data-nav-link href="#location">
+      <span class="material-symbols-outlined bottom-nav__icon" aria-hidden="true">location_on</span>
+      <span class="bottom-nav__label">Lokasi</span>
+    </a>
+    <a class="bottom-nav__item" data-nav-link href="#streaming">
+      <span class="material-symbols-outlined bottom-nav__icon" aria-hidden="true">videocam</span>
+      <span class="bottom-nav__label">Live</span>
+    </a>
+    <a class="bottom-nav__item" data-nav-link href="#story">
+      <span class="material-symbols-outlined bottom-nav__icon" aria-hidden="true">auto_stories</span>
+      <span class="bottom-nav__label">Kisah</span>
+    </a>
+    <a class="bottom-nav__item" data-nav-link href="#gallery">
+      <span class="material-symbols-outlined bottom-nav__icon" aria-hidden="true">photo_library</span>
+      <span class="bottom-nav__label">Galeri</span>
+    </a>
+    <a class="bottom-nav__item" data-nav-link href="#video">
+      <span class="material-symbols-outlined bottom-nav__icon" aria-hidden="true">smart_display</span>
+      <span class="bottom-nav__label">Video</span>
+    </a>
+    <a class="bottom-nav__item" data-nav-link href="#gift">
+      <span class="material-symbols-outlined bottom-nav__icon" aria-hidden="true">card_giftcard</span>
+      <span class="bottom-nav__label">Amplop</span>
+    </a>
+    <a class="bottom-nav__item" data-nav-link href="#wishes">
+      <span class="material-symbols-outlined bottom-nav__icon" aria-hidden="true">edit_note</span>
+      <span class="bottom-nav__label">Ucapan</span>
+    </a>
+  </div>
+  <!-- Panah indikator geser (mobile) — muncul otomatis via JS
+       (initBottomNav(), script.js § 5b) hanya saat track benar-benar bisa
+       discroll & belum mentok di salah satu ujung. Murni visual (ikon
+       panah), tidak mengganggu urutan tab/fokus keyboard. -->
+  <span class="bottom-nav__edge bottom-nav__edge--left" id="bottom-nav-edge-left" aria-hidden="true">
+    <span class="material-symbols-outlined">chevron_left</span>
+  </span>
+  <span class="bottom-nav__edge bottom-nav__edge--right" id="bottom-nav-edge-right" aria-hidden="true">
+    <span class="material-symbols-outlined">chevron_right</span>
+  </span>
+</nav>
+<!-- ======================= END NAVBAR BAWAH MENGAMBANG ======================= -->
+
+<!-- ======================= KONTEN UTAMA =======================
+     Semua konten dibaca linear lewat scroll (storytelling scroll). Tiap
+     <section> langsung di bawah <main> WAJIB pakai class dasar "section" +
+     1 class unik per-section (styling di style.css § WEDDING SECTIONS).
+     Navigasi cepat antar section kini tersedia lewat #bottom-nav di atas.
      ============================================================================ -->
 <main class="site-main">
 

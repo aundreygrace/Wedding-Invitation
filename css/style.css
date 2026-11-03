@@ -104,6 +104,12 @@
     --space-xl: 3rem;
     --space-2xl: 5rem;
 
+    /* Ruang cadangan utk floating bottom navbar (§ NAVBAR BAWAH, Bagian 6b)
+       — dipakai sbg jarak aman di bawah konten (.closing) & utk menggeser
+       .audio-controller ke atas navbar di layar sempit, supaya navbar tidak
+       menutupi konten/tombol. */
+    --bottom-nav-clearance: 6rem;
+
     /* Elevation */
     --shadow-standard: 0 12px 36px -8px rgba(59, 36, 20, 0.35), 0 4px 12px -2px rgba(59, 36, 20, 0.2);
     --shadow-glow-gold: 0 10px 30px rgba(212, 175, 55, 0.4);
@@ -706,6 +712,151 @@
     font-size: var(--fs-body-sm);
   }
   .toast.is-visible { display: flex; }
+
+  /* --- Navbar Bawah Mengambang (Floating Bottom Navbar) ---
+     Komponen BARU, tidak mengubah section/konten lain. Daftar <a
+     data-nav-link href="#id-section"> dibaca HTML — tambah/hapus item
+     cukup edit index.html, CSS & JS ini generik (tidak hardcode per-item).
+     Tampil HANYA setelah undangan dibuka: default tersembunyi, class
+     body.is-unlocked (ditambah script.js § initOpeningCurtain, Bagian 4)
+     yang memunculkannya — murni CSS, selaras dgn pola is-unlocked yang
+     sudah ada utk membuka scroll. z-index 45: di bawah toast/curtain (50)
+     & lightbox (60) supaya tidak menutupi modal/notifikasi, tapi di atas
+     audio-controller (40) & konten section biasa.
+     JS  : script.js § 5b — initBottomNav() (smooth-scroll native via href
+           + html{scroll-behavior:smooth}, dan indikator section aktif). */
+  .bottom-nav {
+    position: fixed;
+    left: 50%;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.85rem);
+    transform: translateX(-50%);
+    z-index: 45;
+    max-width: min(94vw, 700px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 400ms ease, visibility 400ms ease, transform 400ms ease;
+  }
+  body.is-unlocked .bottom-nav {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  /* Sembunyikan sementara saat lightbox foto terbuka (z-index lightbox
+     lebih tinggi, jadi sebenarnya sudah tertutup modal — ini cuma jaga-jaga
+     biar tidak ikut "intercept" sentuhan di pinggir modal pada sebagian browser). */
+  body.lightbox-open .bottom-nav { opacity: 0; pointer-events: none; }
+
+  .bottom-nav__track {
+    display: flex;
+    align-items: stretch;
+    gap: 0.2rem;
+    background: rgba(45, 26, 13, 0.92);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+    border-radius: var(--radius-full);
+    padding: 0.35rem 0.4rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .bottom-nav__track::-webkit-scrollbar { display: none; }
+
+  .bottom-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1rem;
+    min-width: 2.9rem;
+    padding: 0.35rem 0.45rem;
+    border-radius: var(--radius-full);
+    color: rgba(238, 223, 204, 0.6);
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: color 250ms, background 250ms;
+  }
+  .bottom-nav__icon { font-size: 18px; line-height: 1; }
+  .bottom-nav__label {
+    font-family: var(--font-body);
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    line-height: 1.1;
+  }
+  .bottom-nav__item:hover,
+  .bottom-nav__item:focus-visible {
+    color: var(--gold-bright);
+    background: rgba(212, 175, 55, 0.12);
+  }
+  .bottom-nav__item.is-active {
+    color: var(--sogan-deep);
+    background: var(--gold-bright);
+    box-shadow: var(--shadow-glow-gold);
+  }
+  .bottom-nav__item.is-active .bottom-nav__label { color: var(--sogan-deep); }
+
+  @media (min-width: 640px) {
+    .bottom-nav__item { min-width: 3.2rem; padding: 0.4rem 0.55rem; }
+    .bottom-nav__icon { font-size: 19px; }
+    .bottom-nav__label { font-size: 9px; }
+  }
+
+  /* Desktop (>=1024px): dikecilkan lagi — pada layar lebar pill ini
+     tadinya ikut membesar padahal konten di baliknya sudah lega, jadi
+     terasa menutupi. Dibikin lebih "ramping" sesuai tujuan awal navbar
+     ini. 10 item pada ukuran ini biasanya sudah muat tanpa perlu digeser. */
+  @media (min-width: 1024px) {
+    .bottom-nav__track { padding: 0.3rem 0.35rem; gap: 0.15rem; }
+    .bottom-nav__item { min-width: 2.75rem; padding: 0.3rem 0.5rem; }
+    .bottom-nav__icon { font-size: 16px; }
+    .bottom-nav__label { font-size: 8px; }
+  }
+
+  /* Indikator "masih ada menu yang digeser" (mobile) — dua panah kecil di
+     ujung kiri/kanan pill, ditampilkan JS (initBottomNav(), script.js §
+     5b) HANYA saat track benar-benar overflow & belum mentok di ujung
+     tsb (class .is-visible). Desktop tidak butuh ini (navbar sudah muat
+     tanpa geser di lebar >=1024px, lihat komentar di atas). */
+  .bottom-nav__edge {
+    display: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-full);
+    background: var(--gold-bright);
+    color: var(--sogan-deep);
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 250ms ease;
+    z-index: 1;
+  }
+  .bottom-nav__edge .material-symbols-outlined { font-size: 14px; }
+  .bottom-nav__edge--left { left: -6px; }
+  .bottom-nav__edge--right { right: -6px; }
+  .bottom-nav__edge.is-visible { opacity: 1; }
+
+  @media (max-width: 767px) {
+    .bottom-nav__edge { display: flex; }
+  }
+
+  /* Layar sempit (< 1024px, tempat navbar bisa melebar mendekati lebar
+     penuh): angkat tombol musik mengambang ke atas navbar supaya tidak
+     tumpang tindih. Di layar lebar navbar tetap "ramping" di tengah jadi
+     tombol musik di pojok kanan otomatis aman, tidak perlu digeser. */
+  @media (max-width: 1023px) {
+    body.is-unlocked .audio-controller {
+      bottom: calc(env(safe-area-inset-bottom, 0px) + var(--bottom-nav-clearance));
+    }
+  }
 
   /* ==========================================================================
      7. WEDDING SECTIONS — bagian TERBESAR & PALING SERING DIUBAH. Tiap
@@ -2551,8 +2702,45 @@
   .wish-card__who { min-width: 0; }
   .wish-card__who .label-md { overflow-wrap: anywhere; }
 
+  /* --- Wishes: KHUSUS MOBILE/TABLET (< 1024px) ---
+     1) Bug "stuck": overscroll-behavior: contain menahan scroll di dalam
+        daftar, sehingga saat sudah mentok bawah/atas, gesture tidak
+        diteruskan ke halaman. Diganti auto agar scroll chaining jalan
+        (lanjut ke section berikutnya). touch-action: pan-y menjaga swipe
+        vertikal tetap diteruskan ke browser.
+     2) Daftar dibuat sedikit lebih pendek supaya selalu ada area di luar
+        daftar untuk menggeser halaman.
+     3) Kartu ucapan diperkecil & diberi ruang di tepi supaya tidak mepet. */
+  @media (max-width: 1023px) {
+    .wishes__list {
+      max-height: min(24rem, 58vh);
+      overscroll-behavior: auto;
+      overscroll-behavior-y: auto;
+      touch-action: pan-y;
+      gap: 0.7rem;
+      padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+      width: 100%;
+    }
+    .wish-card {
+      padding: 0.75rem 0.85rem;
+      border-radius: var(--radius-md);
+      box-shadow: 0 6px 18px -8px rgba(59, 36, 20, 0.35);
+    }
+    .wish-card__head { margin-bottom: 0.35rem; gap: 0.5rem; }
+    .wish-card__who { gap: 0.5rem; }
+    .wish-card__avatar { width: 1.6rem; height: 1.6rem; font-size: 0.7rem; }
+    .wish-card__who .label-md { font-size: 0.8rem; }
+    .wish-card p.body-sm { font-size: 0.78rem; line-height: 1.5; }
+    .attendance-badge { font-size: 9px; padding: 0.1rem 0.55rem; }
+    .wish-card__time { margin-top: 0.35rem; font-size: 9px; }
+    .wish-skeleton { height: 3.5rem; }
+  }
+
   /* --- Closing --- */
-  .closing { padding-bottom: max(calc(var(--space-2xl) + 1rem), calc(env(safe-area-inset-bottom, 0px) + 5rem)); }
+  /* +var(--bottom-nav-clearance): jaga jarak aman dari navbar bawah
+     mengambang (§ NAVBAR BAWAH, Bagian 6b) supaya tidak menutupi
+     tanda tangan/penutup saat scroll sudah mentok di paling bawah. */
+  .closing { padding-bottom: calc(max(calc(var(--space-2xl) + 1rem), calc(env(safe-area-inset-bottom, 0px) + 5rem)) + var(--bottom-nav-clearance)); }
   .closing__emblem { width: clamp(5rem, 26vw, 6rem); }
   @media (min-width: 768px) { .closing__emblem { width: 8rem; } }
   .closing__title { font-size: clamp(1.75rem, 9vw, 1.875rem); }
@@ -2902,7 +3090,7 @@
 /* Ruang kecil agar bayangan kartu tidak terpotong oleh overflow:hidden */
 .gift__collapse-body {
   padding: 0.25rem 0.25rem 1.5rem;
-  /* Revisi pembimbing: animasikan isi amplop (rekening & alamat) saat
+  /* Revisi : animasikan isi amplop (rekening & alamat) saat
      dibuka — fade-in + sedikit naik, BUKAN langsung muncul bersamaan
      animasi tinggi grid-template-rows di atas. Delay 150ms supaya fade
      dimulai setelah panel mulai melebar, terasa lebih alami. Saat
@@ -2938,3 +3126,58 @@
   .gift__collapse-body,
   .gift__panel.is-open .gift__collapse-body { transition: none; opacity: 1; transform: none; }
 }
+
+/* ==========================================================================
+   REVISI — SECTION PENUTUP ("Terima Kasih") MUAT SATU LAYAR (SEMUA DEVICE)
+   --------------------------------------------------------------------------
+   Ukuran emblem, teks, jarak, dan padding mengikuti TINGGI viewport (vh/svh)
+   lewat clamp() agar seluruh isi muat saat scroll mentok, tapi tetap
+   proporsional (tidak sekecil revisi sebelumnya, tidak sebesar aslinya).
+   Deklarasi vh = fallback browser lama, svh = browser modern (mobile).
+   Tweak cepat: naikkan/turunkan angka tengah (mis. 6.5svh) di tiap clamp().
+   ========================================================================== */
+.closing {
+  padding-top: clamp(1.5rem, 6vh, 3.5rem);
+  padding-bottom: clamp(1.75rem, 7vh, 3.5rem);
+  padding-top: clamp(1.5rem, 6svh, 3.5rem);
+  padding-bottom: clamp(1.75rem, 7svh, 3.5rem);
+  justify-content: center;
+}
+.closing__emblem {
+  width: clamp(3.5rem, 13vh, 6.5rem);
+  width: clamp(3.5rem, 13svh, 6.5rem);
+  margin-bottom: clamp(0.6rem, 2.2svh, 1.5rem);
+}
+.closing__title {
+  font-size: clamp(1.75rem, 6.5vh, 2.75rem);
+  font-size: clamp(1.75rem, 6.5svh, 2.75rem);
+  margin-bottom: clamp(0.5rem, 1.8svh, 1rem);
+}
+.closing__lead {
+  font-size: clamp(0.875rem, 2.3vh, 1.05rem);
+  font-size: clamp(0.875rem, 2.3svh, 1.05rem);
+  line-height: 1.55;
+  margin-bottom: clamp(0.8rem, 2.6svh, 1.5rem);
+}
+.closing__salam {
+  font-size: clamp(0.95rem, 2.5svh, 1.2rem);
+  margin-bottom: clamp(0.6rem, 2svh, 1.25rem);
+}
+.closing__dua {
+  font-size: clamp(1.1rem, 3.4svh, 1.5rem);
+  line-height: 1.3;
+  margin-bottom: clamp(1rem, 3.4svh, 2.25rem);
+}
+.closing__families {
+  padding-top: clamp(0.9rem, 2.8svh, 1.75rem);
+  gap: clamp(0.6rem, 2.2svh, 1.5rem);
+}
+.closing__family .headline-sm { font-size: clamp(1rem, 2.7svh, 1.2rem); }
+.closing__heart {
+  width: clamp(2rem, 5svh, 2.5rem);
+  height: clamp(2rem, 5svh, 2.5rem);
+}
+.closing__signature { margin-top: clamp(1rem, 3.6svh, 2.5rem); }
+.closing__signature .display-hero { font-size: clamp(1.9rem, 6svh, 3rem); }
+.closing__signature .label-caps { margin-top: 0.3rem; }
+.closing__bg img { height: 70%; }

@@ -353,6 +353,94 @@
   }
 
   // ==========================================================================
+  // 5b. NAVBAR BAWAH (Floating Bottom Navbar)
+  // --------------------------------------------------------------------------
+  // Smooth-scroll ke section memakai anchor native (href="#id" +
+  // html{scroll-behavior:smooth} di style.css) — tidak perlu JS khusus
+  // untuk scroll-nya. Fungsi ini hanya menambahkan indikator "section
+  // aktif" (class .is-active) lewat IntersectionObserver, plus feedback
+  // instan saat item diklik. Visibilitas navbar (muncul setelah undangan
+  // dibuka) murni CSS lewat body.is-unlocked — lihat style.css §
+  // "Navbar Bawah Mengambang".
+  // ==========================================================================
+  function initBottomNav() {
+    const navLinks = document.querySelectorAll('[data-nav-link]');
+    if (!navLinks.length) return;
+
+    const sections = Array.prototype.map
+      .call(navLinks, (link) => document.getElementById(link.getAttribute('href').slice(1)))
+      .filter(Boolean);
+
+    // Indikator panah geser (mobile, lihat style.css § "Navbar Bawah
+    // Mengambang" .bottom-nav__edge): tampil hanya saat track BENAR-BENAR
+    // overflow & belum mentok di ujung terkait, supaya user tahu masih ada
+    // menu yang tertutup/perlu digeser.
+    const track = document.getElementById('bottom-nav-track');
+    const edgeLeft = document.getElementById('bottom-nav-edge-left');
+    const edgeRight = document.getElementById('bottom-nav-edge-right');
+
+    function updateEdgeIndicators() {
+      if (!track || !edgeLeft || !edgeRight) return;
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      if (maxScroll <= 2) {
+        edgeLeft.classList.remove('is-visible');
+        edgeRight.classList.remove('is-visible');
+        return;
+      }
+      edgeLeft.classList.toggle('is-visible', track.scrollLeft > 2);
+      edgeRight.classList.toggle('is-visible', track.scrollLeft < maxScroll - 2);
+    }
+
+    if (track) {
+      track.addEventListener('scroll', updateEdgeIndicators, { passive: true });
+      window.addEventListener('resize', updateEdgeIndicators);
+      updateEdgeIndicators();
+      // Navbar masih visibility:hidden (belum is-unlocked) saat init() awal
+      // jalan, jadi ukurannya baru pasti akurat setelah benar-benar tampil
+      // (1200ms, sinkron dgn initOpeningCurtain()) — recalc sekali lagi.
+      window.setTimeout(updateEdgeIndicators, 1300);
+    }
+
+    function setActiveNavLink(id) {
+      navLinks.forEach((link) => {
+        const isMatch = link.getAttribute('href') === '#' + id;
+        link.classList.toggle('is-active', isMatch);
+        if (isMatch) {
+          link.setAttribute('aria-current', 'true');
+        } else {
+          link.removeAttribute('aria-current');
+        }
+      });
+    }
+
+    // Klik: set state aktif langsung (terasa instan), scroll-nya sendiri
+    // sudah ditangani browser (anchor href + scroll-behavior:smooth).
+    navLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        setActiveNavLink(link.getAttribute('href').slice(1));
+      });
+    });
+
+    if (!('IntersectionObserver' in window) || !sections.length) return;
+
+    // Pita deteksi dipersempit ke tengah viewport (bukan 0-100% penuh)
+    // supaya section yang paling "mendominasi" layar yang ditandai aktif,
+    // bukan section yang baru menyentuh tepi atas/bawah layar.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveNavLink(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: '-40% 0px -40% 0px', threshold: 0 }
+    );
+
+    sections.forEach((section) => observer.observe(section));
+  }
+
+  // ==========================================================================
   // 6. COUNTDOWN
   // --------------------------------------------------------------------------
   // Tiga fase berdasarkan weddingData.date:
@@ -1417,6 +1505,7 @@
     initGiftToggle();      // bagian 12 (buka/tutup amplop digital)
     initCopyButtons();     // bagian 12
     initGuestbookForm();   // bagian 13 (form Guestbook + feed Google Sheets)
+    initBottomNav();       // bagian 5b (navbar bawah mengambang)
 
     // Jika halaman sudah `is-unlocked` saat dimuat (mis. testing tanpa sampul),
     // jalankan scroll-reveal langsung.
