@@ -14,8 +14,10 @@
 //   intro           -> kutipan ayat pembuka
 //   events          -> detail acara akad & resepsi
 //   location        -> peta, alamat, tata tertib
+//   streaming       -> ajakan nonton live streaming (section #streaming)
 //   story           -> timeline kisah cinta (list)
 //   gallery         -> foto pre-wedding (list)
+//   video           -> video YouTube momen pernikahan (section #video)
 //   gift            -> amplop digital (rekening bank, alamat fisik)
 //   wishes          -> teks form & status buku tamu
 //   closing         -> teks penutup/footer
@@ -304,6 +306,20 @@
     // ================================================================
 
     // ================================================================
+    // DATA BOUNDARY: streaming — ajakan nonton live streaming (section #streaming)
+    // ================================================================
+    streaming: {
+      eyebrow: 'Siaran Langsung',
+      title: 'Live Streaming Upacara Pernikahan',
+      description: 'Bagi keluarga dan kerabat yang berhalangan hadir secara langsung.',
+      url: 'https://youtube.com',
+      buttonLabel: 'Tonton Siaran',
+    },
+    // ================================================================
+    // END DATA BOUNDARY: streaming
+    // ================================================================
+
+    // ================================================================
     // DATA BOUNDARY: story — timeline kisah cinta (section #story)
     // JS-RENDERED LIST — di-render oleh hydrateConfig() dari story.items[]
     // ke ol[data-config-story] di index.html
@@ -373,6 +389,22 @@
     },
     // ================================================================
     // END DATA BOUNDARY: gallery
+    // ================================================================
+
+    // ================================================================
+    // DATA BOUNDARY: video — video YouTube momen pernikahan (section #video)
+    // Iframe YouTube responsif (rasio 16:9) tanpa fungsi JS khusus — src
+    // & title diisi oleh hydrateConfig() via data-config-src/data-config-title.
+    // GANTI VIDEO: ganti embedUrl dengan ID video YouTube yang sebenarnya.
+    // ================================================================
+    video: {
+      eyebrow: 'Sinema & Dokumenter',
+      title: 'Momen Pernikahan',
+      embedUrl: 'https://www.youtube.com/embed/qNy_hxzZIEw?si=OcoN9Nnpca--wBSb',
+      embedTitle: 'Gending Tresna: Video Pernikahan Arya & Sekar',
+    },
+    // ================================================================
+    // END DATA BOUNDARY: video
     // ================================================================
 
     // ================================================================

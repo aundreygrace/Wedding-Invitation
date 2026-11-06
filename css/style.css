@@ -1242,6 +1242,53 @@
    ============================================================================== */
 
 /* ==============================================================================
+   BOUNDARY: SECTION: LIVE STREAMING
+   Kartu ajakan nonton live streaming (section #streaming): ikon + teks di
+   .streaming__info, tombol "Tonton Siaran" di sisi kanan (desktop) / bawah
+   (mobile). Responsive: kolom di mobile, baris di >=768px.
+   ============================================================================== */
+.streaming { padding-top: var(--space-xl); padding-bottom: var(--space-xl); }
+.streaming__card {
+  max-width: 56rem;
+  width: 100%;
+  background: linear-gradient(to right, var(--sogan-card), var(--sogan-deep), var(--sogan-card));
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  box-shadow: var(--shadow-standard);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  text-align: center;
+}
+@media (min-width: 768px) {
+  .streaming__card { flex-direction: row; text-align: left; }
+}
+.streaming__info { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+@media (min-width: 768px) {
+  .streaming__info { flex-direction: row; align-items: center; }
+}
+.streaming__icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--radius-md);
+  background: rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-bright);
+  flex-shrink: 0;
+}
+.streaming__icon .material-symbols-outlined { font-size: 32px; animation: pulse 2s infinite; }
+.streaming__info p { margin-top: 0.25rem; color: rgba(238, 223, 204, 0.8); }
+/* ==============================================================================
+   END BOUNDARY: SECTION: LIVE STREAMING
+   ============================================================================== */
+
+/* ==============================================================================
    BOUNDARY: SECTION: STORY TIMELINE
    Section #story: garis waktu kisah cinta (.story__timeline) zig-zag kiri/kanan desktop, node ikon bulat (.story__node), kartu foto + deskripsi (.story__card, .story__photo).
    ============================================================================== */
@@ -1566,6 +1613,34 @@
 
 /* ==============================================================================
    END BOUNDARY: COMPONENT: LIGHTBOX
+   ============================================================================== */
+
+/* ==============================================================================
+   BOUNDARY: COMPONENT: VIDEO WRAPPER
+   Iframe YouTube responsif (section #video). Rasio tetap 16:9 via
+   aspect-ratio agar tidak ada "jumping layout" saat iframe dimuat (mencegah
+   Cumulative Layout Shift). Lebar desktop disesuaikan lebih lanjut di
+   §MOBILE-FIRST RESPONSIVE REFINEMENTS & §POST-PASS FIXES.
+   ============================================================================== */
+.video-wrapper {
+  width: 100%;
+  max-width: 50rem;
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-standard);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  background: var(--sogan-card);
+}
+.video-wrapper iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+/* ==============================================================================
+   END BOUNDARY: COMPONENT: VIDEO WRAPPER
    ============================================================================== */
 
 /* ==============================================================================
@@ -2137,6 +2212,7 @@
     }
 
     .audio-controller__disc,
+    .streaming__icon .material-symbols-outlined,
     .map-card__pin,
     .guestbook-form__submit-dots span {
       animation: none !important;
@@ -2301,6 +2377,11 @@
   .map-card__pin { width: 3rem; height: 3rem; }
   .map-card__footer { padding: 0.9rem 0.25rem 0.25rem; line-height: 1.5; }
 
+  .streaming__card { padding: 1.5rem 1.25rem; border-radius: var(--radius-lg); }
+  @media (min-width: 640px) { .streaming__card { padding: 2rem; border-radius: var(--radius-xl); } }
+  .streaming__card .btn { width: 100%; max-width: 20rem; }
+  @media (min-width: 768px) { .streaming__card .btn { width: auto; } }
+
   .story__timeline { padding-left: 2.75rem; gap: 1.75rem; }
   .story__timeline::before { left: 1rem; }
   .story__node { left: 1rem; width: 1.9rem; height: 1.9rem; }
@@ -2355,6 +2436,9 @@
     .lightbox__nav { width: 2.75rem; height: 2.75rem; }
     .lightbox__nav .material-symbols-outlined { font-size: 28px; }
   }
+
+  .video-wrapper { border-radius: var(--radius-lg); }
+  @media (min-width: 640px) { .video-wrapper { border-radius: var(--radius-xl); } }
 
   .bank-card__number { font-size: clamp(1.25rem, 6.4vw, 1.625rem); overflow-wrap: anywhere; }
   .address-card { padding: 1.5rem 1.25rem; border-radius: var(--radius-lg); }
@@ -2537,6 +2621,11 @@
     max-width: 64rem;
   }
 
+  .video-wrapper {
+    width: 100%;
+    max-width: 52rem;
+  }
+
   
   .gallery-slider__track {
     gap: 1rem;
@@ -2616,6 +2705,9 @@
 @media (min-width: 1280px) {
   .gallery-slider {
     max-width: var(--content-max);
+  }
+  .video-wrapper {
+    max-width: 56rem;
   }
 }
 

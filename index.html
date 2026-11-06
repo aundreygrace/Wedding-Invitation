@@ -283,6 +283,32 @@
   <!-- ============================================ -->
 
   <!-- ============================================ -->
+  <!-- TEMPLATE TAGGING BOUNDARY MARKER: LIVE STREAMING SECTION -->
+  <!-- Kartu ajakan nonton live streaming. CSS: style.css § SECTION: LIVE STREAMING -->
+  <!-- ============================================ -->
+  <section class="section streaming" id="streaming">
+    <div class="reveal-item delay-0 streaming__card">
+      <div class="streaming__info">
+        <span class="streaming__icon">
+          <span class="material-symbols-outlined" aria-hidden="true">videocam</span>
+        </span>
+        <div>
+          <span class="label-caps" data-config-text="streaming.eyebrow"></span>
+          <h3 class="headline-sm" data-config-text="streaming.title"></h3>
+          <p class="body-sm" data-config-text="streaming.description"></p>
+        </div>
+      </div>
+      <a class="btn btn--gold-solid" data-config-href="streaming.url" target="_blank" rel="noopener noreferrer">
+        <span class="material-symbols-outlined" aria-hidden="true">smart_display</span>
+        <span data-config-text="streaming.buttonLabel"></span>
+      </a>
+    </div>
+  </section>
+  <!-- ============================================ -->
+  <!-- END TEMPLATE TAGGING BOUNDARY MARKER: LIVE STREAMING SECTION -->
+  <!-- ============================================ -->
+
+  <!-- ============================================ -->
   <!-- TEMPLATE TAGGING BOUNDARY MARKER: STORY TIMELINE SECTION -->
   <!-- AREA INI MENGGUNAKAN DYNAMIC INJECTION CONFIG (JS-RENDERED LIST: CONFIG.story.items) -->
   <!-- ============================================ -->
@@ -329,6 +355,29 @@
   </div>
   <!-- ============================================ -->
   <!-- END TEMPLATE TAGGING BOUNDARY MARKER: GALLERY LIGHTBOX -->
+  <!-- ============================================ -->
+
+  <!-- ============================================ -->
+  <!-- TEMPLATE TAGGING BOUNDARY MARKER: VIDEO SECTION -->
+  <!-- Iframe YouTube responsif (rasio 16:9), tanpa JS khusus — kontrol
+       play/pause/fullscreen bawaan player YouTube.
+       CSS: style.css § COMPONENT: VIDEO WRAPPER
+       GANTI VIDEO: ubah video.embedUrl di js/config.js -->
+  <!-- ============================================ -->
+  <section class="section video" id="video">
+    <div class="reveal-item delay-0 section-heading"><span class="label-caps section-heading__eyebrow" data-config-text="video.eyebrow"></span><h2 class="headline-lg section-heading__title" data-config-text="video.title"></h2><div class="section-heading__rule" aria-hidden="true"></div></div>
+    <div class="reveal-item delay-100 video-wrapper">
+      <iframe
+        data-config-src="video.embedUrl"
+        data-config-title="video.embedTitle"
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen>
+      </iframe>
+    </div>
+  </section>
+  <!-- ============================================ -->
+  <!-- END TEMPLATE TAGGING BOUNDARY MARKER: VIDEO SECTION -->
   <!-- ============================================ -->
 
   <!-- ============================================ -->
