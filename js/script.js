@@ -1,190 +1,291 @@
-/* ==========================================================================
-   SCRIPT UNDANGAN PERNIKAHAN
-   ==========================================================================
-   Seluruh kode dibungkus satu IIFE agar variabel tidak bocor ke global.
-
-   DAFTAR ISI (cari dengan nomor/judul bagian):
-     1.  DATA PERNIKAHAN      -> weddingData (nama, jadwal, pesan, lokasi)
-     2.  REFERENSI DOM        -> objek `dom` (cache elemen HTML)
-     3.  UTILITAS             -> pad2, showToast, copyToClipboard, getInitials
-     4.  SAMPUL PEMBUKA       -> nama tamu & animasi tombol "Buka Undangan"
-     5.  SCROLL REVEAL        -> animasi elemen saat di-scroll
-     6.  COUNTDOWN            -> hitung mundur 3 fase (before / doa / thanks)
-     7.  KALENDER             -> tombol "Simpan ke Kalender"
-     8.  PETA                 -> tanpa JS (iframe statis di HTML)
-     9.  GALERI (SLIDER) & LIGHTBOX  -> carousel foto + modal lightbox + navigasi
-     10. VIDEO                -> iframe YouTube tersemat (responsif, tanpa JS khusus)
-     11. AUDIO                -> musik gamelan latar
-     12. HADIAH DIGITAL       -> buka/tutup amplop digital + tombol salin rekening/alamat
-     13. BUKU TAMU (GUESTBOOK)-> form Hadir/Tidak Hadir + ucapan, terhubung
-                                 Google Sheets via Google Apps Script (REST)
-     14. INISIALISASI         -> init() dan entry point
-
-   POLA PENULISAN:
-     - initXxx()          : dipanggil sekali di init() untuk memasang listener.
-     - Guard `if (!dom.xxx) return;` di awal fungsi membuat fitur aman
-       dinonaktifkan: jika section HTML di-comment, fungsinya tidak error.
-
-   MENGAKTIFKAN SECTION YANG DI-COMMENT DI index.html (Quote, Streaming):
-     1. Hapus komentar HTML pada section terkait di index.html.
-     2. script.js tidak perlu diubah; initXxx() sudah terdaftar di init().
-     3. Khusus Streaming: uncomment juga data `streaming` di bagian 1.
-     (Gift & Wishes/Guestbook sudah AKTIF — tidak di-comment lagi. Section
-     RSVP terpisah SUDAH DIHAPUS atas permintaan pembimbing: konfirmasi
-     kehadiran sekarang jadi satu dengan form Guestbook di bagian 13.)
-
-   KONFIGURASI WAJIB — GUESTBOOK_API_URL (lihat tepat di bawah 'use strict'):
-     Isi dengan URL Web App hasil deploy Google Apps Script (lihat panduan
-     deployment yang diberikan terpisah). TANPA url ini, form Guestbook akan
-     menampilkan pesan error saat disubmit dan tidak bisa mengambil ucapan.
-   ========================================================================== */
-
+// ================================================================
+// WEDDING INVITATION - MAIN SCRIPT
+// Peta modul berkas ini (urutan sesuai kemunculan di bawah):
+//   1. Util & Helper Injeksi      -> getConfigValue, bindAttribute, escapeHtml
+//   2. Template Injection Engine  -> hydrateConfig() (MESIN INJEKSI DATA UTAMA)
+//   3. Helper Umum (UI)           -> toast, clipboard, dsb (tidak terkait injeksi)
+//   4. Guest Name (Runtime)       -> parsing query string ?to=
+//   5. Opening Curtain & Reveal   -> animasi, tidak terkait injeksi
+//   6. Bottom Navigation          -> scroll-spy, tidak terkait injeksi
+//   7. Add to Calendar            -> KONSUMEN data WEDDING_CONFIG (bukan injeksi DOM)
+//   8. Gallery Slider             -> mekanika UI, tidak terkait injeksi
+//   9. Lightbox                   -> mekanika UI, tidak terkait injeksi
+//   10. Audio Controller          -> mekanika UI, tidak terkait injeksi
+//   11. Amplop Digital (Gift)     -> mekanika UI, tidak terkait injeksi
+//   12. Buku Tamu (Guestbook)     -> DATA EKSTERNAL (Google Sheets API), BUKAN dari config.js
+//   13. Init                      -> entry point, memanggil seluruh modul di atas
+// ================================================================
 (function () {
   'use strict';
 
-  // ==========================================================================
-  // KONFIGURASI GUESTBOOK — Google Apps Script Web App
-  // --------------------------------------------------------------------------
-  // WAJIB diisi manual setelah Panjenengan deploy Code.gs sebagai Web App
-  // (lihat panduan deployment terpisah). Tempel URL-nya di antara tanda
-  // kutip di bawah, contoh:
-  //   const GUESTBOOK_API_URL = 'https://script.google.com/macros/s/AKfycb.../exec';
-  // SENGAJA dikosongkan di sini — JANGAN mengarang/menebak URL. Selama masih
-  // kosong, form Guestbook tetap tampil tapi submit/ambil data akan gagal
-  // dengan pesan error yang jelas (lihat handleGuestbookSubmit() &
-  // fetchGuestbookEntries() di Bagian 13).
-  // ==========================================================================
-  const GUESTBOOK_API_URL = 'https://script.google.com/macros/s/AKfycbyAu49rv8f2iRYlBb2OASWzKrGfiTKgY4kpkFPOJCI-o03Qbu2pAeYYkTQbjkCPv76M/exec';
+  const CONFIG = window.WEDDING_CONFIG || {};
+  const GUESTBOOK_API_URL = CONFIG.guestbookApiUrl || '';
 
-  // ==========================================================================
-  // 1. DATA PERNIKAHAN
-  // --------------------------------------------------------------------------
-  // Sumber data utama. Ubah di sini saat template dipakai untuk pasangan lain.
-  // Yang benar-benar dibaca JS: date, messages, location.
-  // Lainnya (couple, events) hanya referensi; teksnya masih di index.html.
-  // ==========================================================================
-  const weddingData = {
-    // Referensi nama mempelai (belum dibaca JS, nama di HTML ditulis manual)
-    couple: {
-      groom: { name: 'Arya Wicaksana', instagram: '@aryawicaksana' },
-      bride: { name: 'Sekar Arum', instagram: '@sekararum' },
-    },
-
-    // Jadwal (dipakai countdown, bagian 6). Gunakan offset zona waktu (+07:00)
-    // agar akurat untuk tamu di zona waktu mana pun.
-    date: {
-      targetISO: '2026-12-24T08:00:00+07:00',    // awal akad (akhir fase "before")
-      thankYouISO: '2026-12-24T14:00:00+07:00',  // acara selesai (awal fase "thanks")
-      displayLabel: 'Kamis, 24 Desember 2026',   // referensi; teks di HTML manual
-    },
-
-    // Pesan countdown (bagian 6): fase "doa" dan fase "thanks"
-    messages: {
-      doa: 'Bismillahirrahmanirrahim. Semoga Allah SWT melimpahkan keberkahan dalam ikatan suci Arya dan Sekar, menjadikan rumah tangga yang sakinah, mawaddah, warahmah, serta senantiasa dipenuhi cinta, kesabaran, dan kebahagiaan.',
-      thanks: 'Terima kasih atas doa, restu, dan kebahagiaan yang telah Anda bagikan kepada Arya dan Sekar. Semoga kebaikan senantiasa menyertai kita semua.',
-    },
-
-    // Referensi jadwal acara (belum dibaca JS; initAddToCalendar punya data sendiri)
-    events: {
-      akad: {
-        time: '08.00 - 10.00 WIB',
-        date: 'Kamis, 24 Desember 2026',
-        venue: 'The Sunan Hotel Solo',
-        address: 'Jl. A. Yani No.40, Kerten, Kec. Laweyan, Kota Surakarta, Jawa Tengah',
-      },
-      resepsi: {
-        time: '11.00 - 14.00 WIB',
-        date: 'Kamis, 24 Desember 2026',
-        venue: 'The Sunan Hotel Solo',
-        address: 'Jl. A. Yani No.40, Kerten, Kec. Laweyan, Kota Surakarta, Jawa Tengah',
-      },
-    },
-
-    // Lokasi (dipakai initAddToCalendar)
-    location: {
-      name: 'The Sunan Hotel Solo',
-      address: 'Jl. A. Yani No.40, Kerten, Kec. Laweyan, Kota Surakarta, Jawa Tengah',
-      mapsUrl: 'https://www.google.com/maps/search/?api=1&query=The%20Sunan%20Hotel%20Solo%2C%20Jl.%20A.%20Yani%20No.40%2C%20Kerten%2C%20Laweyan%2C%20Surakarta%2C%20Jawa%20Tengah',
-    },
-
-    streaming: {
-      url: 'https://youtube.com',
-    }
-  };
-
-  // ==========================================================================
-  // 2. REFERENSI DOM
-  // --------------------------------------------------------------------------
-  // Elemen diambil sekali di sini. Nilai bisa `null` jika section di HTML
-  // sedang di-comment (sudah ditangani guard di tiap fungsi).
-  // ==========================================================================
   const dom = {
     body: document.body,
-
-    // Sampul pembuka (bagian 4)
     curtain: document.getElementById('theatrical-curtain'),
     btnOpen: document.getElementById('btn-open-invitation'),
     wayangLeft: document.getElementById('curtain-wayang-left'),
     wayangRight: document.getElementById('curtain-wayang-right'),
     curtainContent: document.getElementById('curtain-center-content'),
     guestNameEl: document.getElementById('invitation-guest-name'),
-
-    // Audio (bagian 11)
     audioBtn: document.getElementById('audio-controller-btn'),
     audioEl: document.getElementById('gamelan-audio'),
-
-    // Toast (bagian 3)
     toast: document.getElementById('toast-notification'),
     toastMessage: document.getElementById('toast-message'),
-
-    // Countdown & kalender (bagian 6-7)
-    countdownTimer: document.getElementById('countdown-timer'),
-    countdownMessage: document.getElementById('countdown-message'),
-    timerDays: document.getElementById('timer-days'),
-    timerHours: document.getElementById('timer-hours'),
-    timerMinutes: document.getElementById('timer-minutes'),
-    timerSeconds: document.getElementById('timer-seconds'),
     btnAddCalendar: document.getElementById('btn-add-calendar'),
-
-    // Galeri — Slider/Karusel (bagian 9). TP-1 modul: grid diganti slider
-    // atas revisi pembimbing, tapi tetap 1 kartu "track" yang berisi semua
-    // slide, agar swipe/scroll-snap bekerja native di semua browser & device.
     gallerySlider: document.getElementById('gallery-slider'),
     gallerySliderTrack: document.getElementById('gallery-slider-track'),
     galleryPrevBtn: document.getElementById('gallery-prev'),
     galleryNextBtn: document.getElementById('gallery-next'),
     galleryDots: document.getElementById('gallery-dots'),
     galleryStatus: document.getElementById('gallery-slider-status'),
-
-    // Lightbox (bagian 9). TP-2 modul: modal + navigasi Next/Prev/Close.
     lightbox: document.getElementById('gallery-lightbox'),
     lightboxImg: document.getElementById('lightbox-img'),
     lightboxCaption: document.getElementById('lightbox-caption'),
     lightboxClose: document.getElementById('lightbox-close'),
     lightboxPrev: document.getElementById('lightbox-prev'),
     lightboxNext: document.getElementById('lightbox-next'),
-
-    // Amplop digital (bagian 12): panel buka/tutup
     giftPanel: document.getElementById('gift-panel'),
     giftToggle: document.getElementById('gift-toggle'),
-
-    // Buku Tamu / Guestbook (bagian 13) — form + status + feed ucapan
     guestbookForm: document.getElementById('guestbook-form'),
     guestbookStatus: document.getElementById('guestbook-status'),
     guestbookSubmitBtn: document.getElementById('guestbook-submit'),
     wishesContainer: document.getElementById('wishes-container'),
   };
 
-  // ==========================================================================
-  // 3. UTILITAS
-  // ==========================================================================
+  // ================================================================
+  // TEMPLATE INJECTION ENGINE BOUNDARY: HELPER PEMBANTU INJEKSI
+  // AREA INI MENANGANI PEMBACAAN NILAI BERSARANG DARI WEDDING_CONFIG
+  // ================================================================
 
-  /** Format angka jadi 2 digit. Contoh: 7 -> "07". */
-  function pad2(value) {
-    return String(value).padStart(2, '0');
+  // ----------------------------------------------------------------
+  // SUB-BOUNDARY: escapeHtml — sanitasi teks sebelum di-injeksi via innerHTML
+  // ----------------------------------------------------------------
+  function escapeHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
+  // ----------------------------------------------------------------
+  // END SUB-BOUNDARY: escapeHtml
+  // ----------------------------------------------------------------
 
-  /** Tampilkan toast selama 3 detik. Pemanggilan baru membatalkan timer lama. */
+  // ----------------------------------------------------------------
+  // SUB-BOUNDARY: getConfigValue — setara getNestedValue(obj, path) pada modul
+  // Membaca path string "a.b.c" menjadi CONFIG.a.b.c secara aman (null-safe)
+  // ----------------------------------------------------------------
+  function getConfigValue(path) {
+    return String(path || '').split('.').reduce((value, key) => (value == null ? undefined : value[key]), CONFIG);
+  }
+  // ----------------------------------------------------------------
+  // END SUB-BOUNDARY: getConfigValue
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  // SUB-BOUNDARY: bindAttribute — injeksi nilai config ke atribut HTML
+  // (dipakai untuk data-config-src, -href, -alt, -title, -content,
+  //  -placeholder, -value, -aria-label; lihat pemanggilannya di hydrateConfig)
+  // ----------------------------------------------------------------
+  function bindAttribute(dataKey, selector, attrName) {
+    document.querySelectorAll(selector).forEach((el) => {
+      const value = getConfigValue(el.dataset[dataKey]);
+      if (value != null) el.setAttribute(attrName, value);
+    });
+  }
+  // ----------------------------------------------------------------
+  // END SUB-BOUNDARY: bindAttribute
+  // ----------------------------------------------------------------
+
+  // ================================================================
+  // END TEMPLATE INJECTION ENGINE BOUNDARY: HELPER PEMBANTU INJEKSI
+  // ================================================================
+
+  // ================================================================
+  // TEMPLATE INJECTION ENGINE BOUNDARY: hydrateConfig()
+  // AREA INI MENANGANI SELURUH INJEKSI DATA DARI WEDDING_CONFIG KE index.html
+  // (scan [data-config-*] -> cocokkan path -> suntik ke DOM, lihat juga
+  //  anotasi HTML TEMPLATE BOUNDARY MARKER pada index.html)
+  // ================================================================
+  function hydrateConfig() {
+    if (!CONFIG || !Object.keys(CONFIG).length) return;
+
+    // --------------------------------------------------------------
+    // SUB-BOUNDARY: data-config-lang -> atribut lang pada <html>
+    // --------------------------------------------------------------
+    document.querySelectorAll('[data-config-lang]').forEach((el) => {
+      el.setAttribute('lang', getConfigValue(el.dataset.configLang) || 'id');
+    });
+    // --------------------------------------------------------------
+    // END SUB-BOUNDARY: data-config-lang
+    // --------------------------------------------------------------
+
+    // --------------------------------------------------------------
+    // SUB-BOUNDARY: data-config-text -> injeksi textContent (mayoritas konten teks)
+    // --------------------------------------------------------------
+    document.querySelectorAll('[data-config-text]').forEach((el) => {
+      const value = getConfigValue(el.dataset.configText);
+      if (value != null) el.textContent = value;
+    });
+    // --------------------------------------------------------------
+    // END SUB-BOUNDARY: data-config-text
+    // --------------------------------------------------------------
+
+    // --------------------------------------------------------------
+    // SUB-BOUNDARY: injeksi atribut (src, href, alt, title, content,
+    // placeholder, value, aria-label) via bindAttribute()
+    // --------------------------------------------------------------
+    bindAttribute('configSrc', '[data-config-src]', 'src');
+    bindAttribute('configHref', '[data-config-href]', 'href');
+    bindAttribute('configAlt', '[data-config-alt]', 'alt');
+    bindAttribute('configTitle', '[data-config-title]', 'title');
+    bindAttribute('configContent', '[data-config-content]', 'content');
+    bindAttribute('configPlaceholder', '[data-config-placeholder]', 'placeholder');
+    bindAttribute('configValue', '[data-config-value]', 'value');
+    bindAttribute('configAriaLabel', '[data-config-aria-label]', 'aria-label');
+    // --------------------------------------------------------------
+    // END SUB-BOUNDARY: injeksi atribut
+    // --------------------------------------------------------------
+
+    // --------------------------------------------------------------
+    // SUB-BOUNDARY: data-config-copy-value / data-config-copy-message
+    // (dipakai tombol salin nomor rekening & salin alamat di section Gift)
+    // --------------------------------------------------------------
+    document.querySelectorAll('[data-config-copy-value]').forEach((el) => {
+      el.setAttribute('data-copy-value', getConfigValue(el.dataset.configCopyValue) || '');
+    });
+    document.querySelectorAll('[data-config-copy-message]').forEach((el) => {
+      el.setAttribute('data-copy-message', getConfigValue(el.dataset.configCopyMessage) || '');
+    });
+    // --------------------------------------------------------------
+    // END SUB-BOUNDARY: data-config-copy-value / data-config-copy-message
+    // --------------------------------------------------------------
+
+    // --------------------------------------------------------------
+    // SUB-BOUNDARY: Tata tertib -> render <li> dari CONFIG.location.rules[]
+    // Target: ul[data-config-list="location.rules"] (section Location)
+    // --------------------------------------------------------------
+    const rules = document.querySelector('[data-config-list="location.rules"]');
+    if (rules) {
+      rules.innerHTML = (CONFIG.location.rules || []).map((rule) =>
+        '<li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span><span>' +
+        escapeHtml(rule) + '</span></li>'
+      ).join('');
+    }
+    // --------------------------------------------------------------
+    // END SUB-BOUNDARY: Tata tertib
+    // --------------------------------------------------------------
+
+    // --------------------------------------------------------------
+    // SUB-BOUNDARY: Navigasi bawah -> render <a> dari CONFIG.nav[]
+    // Target: [data-config-nav] (komponen Bottom Navigation)
+    // --------------------------------------------------------------
+    const nav = document.querySelector('[data-config-nav]');
+    if (nav) {
+      nav.innerHTML = (CONFIG.nav || []).map((item) =>
+        '<a class="bottom-nav__item" data-nav-link href="#' + escapeHtml(item.section) + '">' +
+        '<span class="material-symbols-outlined bottom-nav__icon" aria-hidden="true">' + escapeHtml(item.icon) + '</span>' +
+        '<span class="bottom-nav__label">' + escapeHtml(item.label) + '</span></a>'
+      ).join('');
+    }
+    // --------------------------------------------------------------
+    // END SUB-BOUNDARY: Navigasi bawah
+    // --------------------------------------------------------------
+
+    // --------------------------------------------------------------
+    // SUB-BOUNDARY: Kisah cinta -> render timeline <li> dari CONFIG.story.items[]
+    // Target: ol[data-config-story] (section Story)
+    // --------------------------------------------------------------
+    const story = document.querySelector('[data-config-story]');
+    if (story) {
+      const placeholderIcon = CONFIG.story.photoPlaceholderIcon || 'add_a_photo';
+      story.innerHTML = (CONFIG.story.items || []).map((item, index) => {
+        const isRight = index % 2 === 0;
+        const side = isRight ? 'story__item--right' : 'story__item--left';
+        const nodeHtml =
+          '<span class="story__node" aria-hidden="true"><span class="material-symbols-outlined">' +
+          escapeHtml(item.icon) + '</span></span>';
+        const cardHtml =
+          '<article class="reveal-item delay-100 story__card" aria-labelledby="story-heading-' + (index + 1) + '">' +
+          '<figure class="reveal-item reveal-photo delay-200 story__photo">' +
+          '<img class="story__photo-img" src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.alt) + '" loading="lazy" onerror="this.remove()" />' +
+          '<span class="story__photo-placeholder" aria-hidden="true"><span class="material-symbols-outlined">' + escapeHtml(placeholderIcon) + '</span></span>' +
+          '</figure>' +
+          '<time class="label-caps" datetime="' + escapeHtml(item.dateTime) + '">' + escapeHtml(item.date) + '</time>' +
+          '<h4 id="story-heading-' + (index + 1) + '" class="headline-sm">' + escapeHtml(item.title) + '</h4>' +
+          '<p class="body-sm">' + escapeHtml(item.description) + '</p></article>';
+        return '<li class="story__item ' + side + '">' +
+          (isRight ? cardHtml + nodeHtml : nodeHtml + cardHtml) + '</li>';
+      }).join('');
+    }
+    // --------------------------------------------------------------
+    // END SUB-BOUNDARY: Kisah cinta
+    // --------------------------------------------------------------
+
+    // --------------------------------------------------------------
+    // SUB-BOUNDARY: Galeri -> render slide <div> dari CONFIG.gallery.images[]
+    // Target: [data-config-gallery] (section Gallery)
+    // --------------------------------------------------------------
+    const gallery = document.querySelector('[data-config-gallery]');
+    if (gallery) {
+      const g = CONFIG.gallery;
+      gallery.innerHTML = (g.images || []).map((src) =>
+        '<div class="gallery-slider__slide">' +
+        '<button class="gallery-slider__view-btn" type="button" data-lightbox-src="' + escapeHtml(src) +
+        '" data-caption="' + escapeHtml(g.caption) +
+        '" aria-label="' + escapeHtml(g.zoomAriaPrefix) + ' ' + escapeHtml(g.caption) + '">' +
+        '<img class="gallery-slider__img" src="' + escapeHtml(src) + '" alt="' + escapeHtml(g.alt) + '" loading="lazy" /></button>' +
+        '<span class="gallery-slider__caption title-script">' + escapeHtml(g.caption) + '</span></div>'
+      ).join('');
+    }
+    // --------------------------------------------------------------
+    // END SUB-BOUNDARY: Galeri
+    // --------------------------------------------------------------
+
+    // --------------------------------------------------------------
+    // SUB-BOUNDARY: Rekening -> render kartu bank dari CONFIG.gift.banks[]
+    // Target: [data-config-banks] (section Gift / Amplop Digital)
+    // --------------------------------------------------------------
+    const banks = document.querySelector('[data-config-banks]');
+    if (banks) {
+      const gift = CONFIG.gift;
+      banks.innerHTML = (gift.banks || []).map((bank) =>
+        '<article class="bank-card"><div>' +
+        '<div class="bank-card__head"><span class="headline-sm">' + escapeHtml(bank.bank) + '</span></div>' +
+        '<p class="label-caps">' + escapeHtml(gift.accountLabel) + '</p>' +
+        '<p class="headline-md bank-card__number">' + escapeHtml(bank.formattedNumber) + '</p>' +
+        '<p class="body-sm">' + escapeHtml(gift.accountPrefix) + ' ' + escapeHtml(bank.owner) + '</p></div>' +
+        '<button class="btn btn--outline-gold" type="button" data-copy-value="' + escapeHtml(bank.value) +
+        '" data-copy-message="' + escapeHtml(bank.successMessage) +
+        '" aria-label="' + escapeHtml(gift.bankAriaPrefix) + ' ' + escapeHtml(bank.bank) + ' ' + escapeHtml(bank.formattedNumber) + '">' +
+        '<span class="material-symbols-outlined" aria-hidden="true">content_copy</span>' +
+        '<span class="btn__label">' + escapeHtml(gift.copyLabel) + '</span></button></article>'
+      ).join('');
+    }
+    // --------------------------------------------------------------
+    // END SUB-BOUNDARY: Rekening
+    // --------------------------------------------------------------
+
+    // --------------------------------------------------------------
+    // SUB-BOUNDARY: Reload elemen <audio> setelah <source src> disuntik dari config
+    // --------------------------------------------------------------
+    if (dom.audioEl) dom.audioEl.load();
+    // --------------------------------------------------------------
+    // END SUB-BOUNDARY: Reload elemen <audio>
+    // --------------------------------------------------------------
+  }
+  // ================================================================
+  // END TEMPLATE INJECTION ENGINE BOUNDARY: hydrateConfig()
+  // ================================================================
+
+  // ================================================================
+  // MODULE BOUNDARY: HELPER UMUM (UI) — TIDAK TERKAIT INJEKSI DATA
+  // Dipakai lintas modul: toast notifikasi, salin ke clipboard, inisial nama,
+  // dan deteksi preferensi reduced-motion pengguna.
+  // ================================================================
   function showToast(message) {
     if (!dom.toast || !dom.toastMessage) return;
     dom.toastMessage.textContent = message;
@@ -195,11 +296,6 @@
     }, 3000);
   }
 
-  /**
-   * Salin teks ke clipboard (API modern, fallback ke fallbackCopy).
-   * `onSuccess` (opsional) dipanggil setelah berhasil — dipakai tombol Salin
-   * untuk menampilkan umpan balik "Tersalin!".
-   */
   function copyToClipboard(text, message, onSuccess) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard
@@ -214,7 +310,6 @@
     }
   }
 
-  /** Fallback salin untuk browser lama: textarea tersembunyi + execCommand. */
   function fallbackCopy(text, message, onSuccess) {
     const el = document.createElement('textarea');
     el.value = text;
@@ -226,14 +321,13 @@
     try {
       document.execCommand('copy');
     } catch (err) {
-      /* Clipboard tidak tersedia, abaikan */
+      /* abaikan */
     }
     document.body.removeChild(el);
     showToast(message);
     if (onSuccess) onSuccess();
   }
 
-  /** Ambil maksimal 2 inisial huruf kapital. Contoh: "Bambang Pranoto" -> "BP". */
   function getInitials(name) {
     return name
       .split(' ')
@@ -244,21 +338,17 @@
       .toUpperCase();
   }
 
-  /** Deteksi preferensi "Reduce Motion" OS, dipakai agar scroll slide tidak
-   *  dipaksa animasi smooth bagi pengguna yang mematikan animasi. */
   function prefersReducedMotion() {
     return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
+  // ================================================================
+  // END MODULE BOUNDARY: HELPER UMUM (UI)
+  // ================================================================
 
-  // ==========================================================================
-  // 4. SAMPUL PEMBUKA (Theatrical Curtain)
-  // ==========================================================================
-
-  /**
-   * Isi nama tamu dari parameter URL `?to=` atau `?u=`.
-   * Contoh: ?to=Bapak+Danang -> "Bapak Danang".
-   * Jika tidak ada parameter, nama default dari HTML dipakai.
-   */
+  // ================================================================
+  // MODULE BOUNDARY: NAMA TAMU DARI URL (?to=Nama / ?u=Nama)
+  // DATA RUNTIME DARI QUERY STRING — BUKAN DARI WEDDING_CONFIG
+  // ================================================================
   function initGuestName() {
     const params = new URLSearchParams(window.location.search);
     const guestParam = params.get('to') || params.get('u');
@@ -266,25 +356,20 @@
       dom.guestNameEl.textContent = decodeURIComponent(guestParam.replace(/\+/g, ' '));
     }
   }
+  // ================================================================
+  // END MODULE BOUNDARY: NAMA TAMU DARI URL
+  // ================================================================
 
-  /**
-   * Animasi tombol "Buka Undangan". Urutan waktu (sinkron dengan transisi
-   * CSS di style.css Bagian 5; ubah keduanya bersamaan):
-   *   0 ms    : wayang & konten tengah bergerak keluar/memudar
-   *   500 ms  : seluruh sampul fade-out
-   *   1200 ms : sampul disembunyikan, scroll dibuka, scroll-reveal dimulai
-   * Audio dimulai LANGSUNG saat klik (0 ms), bukan di timeout (lihat Bagian 11).
-   */
+  // ================================================================
+  // MODULE BOUNDARY: TIRAI PEMBUKA (OPENING CURTAIN) + SCROLL REVEAL
+  // ANIMASI UI — TIDAK TERKAIT INJEKSI DATA
+  // ================================================================
   function initOpeningCurtain() {
     if (!dom.btnOpen || !dom.curtain) return;
 
     dom.btnOpen.addEventListener('click', () => {
-      // Autoplay bypass (Modul Minggu 7, TP-3): play() HARUS dipanggil
-      // langsung di dalam handler klik (bukan di setTimeout) agar dihitung
-      // sebagai gestur pengguna — terutama di iOS Safari.
       attemptAutoplayAudio();
 
-      // Tahap 1 (0 ms)
       if (dom.wayangLeft) {
         dom.wayangLeft.style.transform = 'translateX(-120%) rotate(-5deg)';
         dom.wayangLeft.style.opacity = '0.2';
@@ -298,34 +383,19 @@
         dom.curtainContent.style.transform = 'scale(0.95)';
       }
 
-      // Tahap 2 (500 ms)
       window.setTimeout(() => {
         dom.curtain.style.opacity = '0';
         dom.curtain.style.pointerEvents = 'none';
       }, 500);
 
-      // Tahap 3 (1200 ms)
       window.setTimeout(() => {
         dom.curtain.style.display = 'none';
-        dom.body.classList.add('is-unlocked'); // buka kembali scroll (lihat style.css)
+        dom.body.classList.add('is-unlocked');
         initScrollReveal();
       }, 1200);
     });
   }
 
-  // ==========================================================================
-  // 5. SCROLL REVEAL
-  // --------------------------------------------------------------------------
-  // JS mendeteksi elemen `.reveal-item` masuk viewport; tampilan animasinya
-  // diatur CSS (style.css Bagian 10).
-  // ==========================================================================
-
-  /**
-   * Tambahkan `.is-revealed` saat elemen `.reveal-item` terlihat 15%.
-   * Animasi hanya sekali per elemen. Tanpa IntersectionObserver, semua
-   * elemen langsung ditampilkan.
-   * Dipanggil dari initOpeningCurtain() atau init() jika body sudah `is-unlocked`.
-   */
   function initScrollReveal() {
     const reveals = document.querySelectorAll('.reveal-item');
 
@@ -343,26 +413,21 @@
           }
         });
       },
-      {
-        threshold: 0.15,
-        rootMargin: '0px 0px -40px 0px',
-      }
+      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
     );
 
     reveals.forEach((el) => observer.observe(el));
   }
+  // ================================================================
+  // END MODULE BOUNDARY: TIRAI PEMBUKA + SCROLL REVEAL
+  // ================================================================
 
-  // ==========================================================================
-  // 5b. NAVBAR BAWAH (Floating Bottom Navbar)
-  // --------------------------------------------------------------------------
-  // Smooth-scroll ke section memakai anchor native (href="#id" +
-  // html{scroll-behavior:smooth} di style.css) — tidak perlu JS khusus
-  // untuk scroll-nya. Fungsi ini hanya menambahkan indikator "section
-  // aktif" (class .is-active) lewat IntersectionObserver, plus feedback
-  // instan saat item diklik. Visibilitas navbar (muncul setelah undangan
-  // dibuka) murni CSS lewat body.is-unlocked — lihat style.css §
-  // "Navbar Bawah Mengambang".
-  // ==========================================================================
+  // ================================================================
+  // MODULE BOUNDARY: NAVIGASI BAWAH (SCROLL-SPY)
+  // MEKANIKA UI — TIDAK TERKAIT INJEKSI DATA
+  // (daftar tautannya sendiri di-render oleh hydrateConfig() di atas,
+  //  dari CONFIG.nav; modul ini hanya menangani perilaku scroll/klik-nya)
+  // ================================================================
   function initBottomNav() {
     const navLinks = document.querySelectorAll('[data-nav-link]');
     if (!navLinks.length) return;
@@ -371,10 +436,6 @@
       .call(navLinks, (link) => document.getElementById(link.getAttribute('href').slice(1)))
       .filter(Boolean);
 
-    // Indikator panah geser (mobile, lihat style.css § "Navbar Bawah
-    // Mengambang" .bottom-nav__edge): tampil hanya saat track BENAR-BENAR
-    // overflow & belum mentok di ujung terkait, supaya user tahu masih ada
-    // menu yang tertutup/perlu digeser.
     const track = document.getElementById('bottom-nav-track');
     const edgeLeft = document.getElementById('bottom-nav-edge-left');
     const edgeRight = document.getElementById('bottom-nav-edge-right');
@@ -395,9 +456,6 @@
       track.addEventListener('scroll', updateEdgeIndicators, { passive: true });
       window.addEventListener('resize', updateEdgeIndicators);
       updateEdgeIndicators();
-      // Navbar masih visibility:hidden (belum is-unlocked) saat init() awal
-      // jalan, jadi ukurannya baru pasti akurat setelah benar-benar tampil
-      // (1200ms, sinkron dgn initOpeningCurtain()) — recalc sekali lagi.
       window.setTimeout(updateEdgeIndicators, 1300);
     }
 
@@ -413,8 +471,6 @@
       });
     }
 
-    // Klik: set state aktif langsung (terasa instan), scroll-nya sendiri
-    // sudah ditangani browser (anchor href + scroll-behavior:smooth).
     navLinks.forEach((link) => {
       link.addEventListener('click', () => {
         setActiveNavLink(link.getAttribute('href').slice(1));
@@ -423,15 +479,10 @@
 
     if (!('IntersectionObserver' in window) || !sections.length) return;
 
-    // Pita deteksi dipersempit ke tengah viewport (bukan 0-100% penuh)
-    // supaya section yang paling "mendominasi" layar yang ditandai aktif,
-    // bukan section yang baru menyentuh tepi atas/bawah layar.
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveNavLink(entry.target.id);
-          }
+          if (entry.isIntersecting) setActiveNavLink(entry.target.id);
         });
       },
       { rootMargin: '-40% 0px -40% 0px', threshold: 0 }
@@ -439,197 +490,81 @@
 
     sections.forEach((section) => observer.observe(section));
   }
+  // ================================================================
+  // END MODULE BOUNDARY: NAVIGASI BAWAH (SCROLL-SPY)
+  // ================================================================
 
-  // ==========================================================================
-  // 6. COUNTDOWN
-  // --------------------------------------------------------------------------
-  // Tiga fase berdasarkan weddingData.date:
-  //   "before" : now < targetISO               -> angka hitung mundur
-  //   "doa"    : targetISO <= now < thankYouISO -> pesan doa
-  //   "thanks" : now >= thankYouISO             -> pesan terima kasih (permanen)
-  // ==========================================================================
-
-  let countdownIntervalId = null; // ID setInterval aktif
-
-  /** Tampilkan grid angka, sembunyikan pesan. */
-  function showCountdownTimer() {
-    if (dom.countdownTimer) dom.countdownTimer.style.display = '';
-    if (dom.countdownMessage) dom.countdownMessage.style.display = 'none';
-  }
-
-  /** Sembunyikan grid angka, tampilkan pesan teks. */
-  function showCountdownMessage(text) {
-    if (dom.countdownTimer) dom.countdownTimer.style.display = 'none';
-    if (dom.countdownMessage) {
-      dom.countdownMessage.textContent = text;
-      dom.countdownMessage.style.display = '';
-    }
-  }
-
-  /**
-   * Perbarui tampilan countdown sesuai waktu sekarang.
-   * @param {number} [nowOverride] - epoch ms, untuk testing.
-   * @returns {'before'|'doa'|'thanks'} fase aktif.
-   */
-  function updateCountdown(nowOverride) {
-    const now = typeof nowOverride === 'number' ? nowOverride : Date.now();
-    const akadStart = new Date(weddingData.date.targetISO).getTime();
-    const thankYouStart = new Date(weddingData.date.thankYouISO).getTime();
-
-    // Fase "before": hitung mundur
-    if (now < akadStart) {
-      showCountdownTimer();
-
-      const distance = Math.max(akadStart - now, 0);
-      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-      if (dom.timerDays) dom.timerDays.textContent = pad2(days);
-      if (dom.timerHours) dom.timerHours.textContent = pad2(hours);
-      if (dom.timerMinutes) dom.timerMinutes.textContent = pad2(minutes);
-      if (dom.timerSeconds) dom.timerSeconds.textContent = pad2(seconds);
-
-      return 'before';
-    }
-
-    // Fase "doa"
-    if (now < thankYouStart) {
-      showCountdownMessage(weddingData.messages.doa);
-      return 'doa';
-    }
-
-    // Fase "thanks"
-    showCountdownMessage(weddingData.messages.thanks);
-    return 'thanks';
-  }
-
-  /**
-   * Jalankan countdown tiap 1 detik. Jika sudah fase "thanks" sejak awal,
-   * interval tidak dibuat; jika fase berubah ke "thanks", interval dihentikan.
-   */
-  function initCountdown() {
-    if (countdownIntervalId !== null) {
-      window.clearInterval(countdownIntervalId);
-      countdownIntervalId = null;
-    }
-
-    const phase = updateCountdown(); // tampil langsung tanpa menunggu 1 detik
-    if (phase === 'thanks') return;
-
-    countdownIntervalId = window.setInterval(() => {
-      const currentPhase = updateCountdown();
-      if (currentPhase === 'thanks' && countdownIntervalId !== null) {
-        window.clearInterval(countdownIntervalId);
-        countdownIntervalId = null;
-      }
-    }, 1000);
-  }
-
-  // ==========================================================================
-  // 7. KALENDER
-  // ==========================================================================
-
-  /**
-   * Tombol "Simpan ke Kalender": buka Google Calendar di tab baru dengan
-   * data event terisi.
-   * CATATAN: `start`/`end` di bawah ditulis manual (format YYYYMMDDTHHMMSS).
-   * Jika tanggal berubah, ubah juga weddingData.date di bagian 1.
-   */
+  // ================================================================
+  // MODULE BOUNDARY: SIMPAN KE KALENDER (GOOGLE CALENDAR)
+  // KONSUMEN DATA WEDDING_CONFIG — teks detail acara disusun dari
+  // CONFIG.events, CONFIG.date, CONFIG.location lalu dikirim sebagai
+  // query string ke Google Calendar (bukan injeksi ke DOM index.html)
+  // ================================================================
   function initAddToCalendar() {
     if (!dom.btnAddCalendar) return;
 
     dom.btnAddCalendar.addEventListener('click', () => {
-      const start = '20261224T080000';
-      const end = '20261224T140000';
-      const title = 'Upacara Pernikahan - Arya & Sekar';
-      const mapUrl = 'https://www.google.com/maps/search/?api=1&query=' +
-        encodeURIComponent(`${weddingData.location.name}, ${weddingData.location.address}`);
+      const ev = CONFIG.events;
+      const cal = ev.calendar;
+      const loc = CONFIG.location;
+
       const detailsText = [
-        'UNDANGAN PERNIKAHAN — ARYA WICAKSANA & SEKAR ARUM',
+        cal.heading + ' — ' + CONFIG.couple.groom.name.toUpperCase() + ' & ' + CONFIG.couple.bride.name.toUpperCase(),
         '',
-        'Kamis, 24 Desember 2026',
+        CONFIG.date.displayLabel,
         '',
-        'RANGKAIAN ACARA',
-        '• Ijab Qabul & Upacara Panggih: 08.00–10.00 WIB',
-        '  Ijab Qabul dilanjutkan dengan Upacara Panggih, tradisi pertemuan kedua pengantin dalam adat Jawa gaya Surakarta Hadiningrat.',
-        '• Resepsi Pernikahan: 11.00–14.00 WIB',
-        '  Resepsi diiringi musik gamelan Jawa untuk menghadirkan suasana tradisional yang hangat. Kehadiran Anda akan menjadi kebahagiaan bagi kedua keluarga.',
+        cal.scheduleHeading,
+        '• ' + ev.akad.title + ': ' + ev.akad.time,
+        '  ' + ev.akad.description,
+        '• ' + ev.resepsi.title + ': ' + ev.resepsi.time,
+        '  ' + ev.resepsi.description,
         '',
-        'DRESSCODE',
-        '• Akad / Upacara Panggih: Beskap Jawi Jangkep atau Kebaya Tradisional Sogan. Palet warna: cokelat sogan, hitam, dan emas antik.',
-        '• Resepsi: Batik Formal Klasik atau Kebaya Modern Nuansa Emas. Palet warna: sogan gelap, emas hangat, dan krem.',
+        cal.dresscodeHeading,
+        '• ' + cal.akadDresscodeLabel + ': ' + ev.akadDresscode,
+        '• ' + cal.resepsiDresscodeLabel + ': ' + ev.resepsiDresscode,
         '',
-        'LOKASI',
-        `${weddingData.location.name}`,
-        `${weddingData.location.address}`,
+        cal.locationHeading,
+        loc.name,
+        loc.address,
         '',
-        'PETA & PETUNJUK ARAH',
-        mapUrl,
+        cal.mapHeading,
+        loc.mapsUrl,
         '',
-        'Terima kasih. Kami menantikan kehadiran Anda untuk berbagi kebahagiaan bersama.'
+        cal.closing,
       ].join('\n');
 
       const params = new URLSearchParams({
         action: 'TEMPLATE',
-        text: title,
-        dates: `${start}/${end}`,
+        text: ev.calendarTitle,
+        dates: CONFIG.date.calendarStart + '/' + CONFIG.date.calendarEnd,
         details: detailsText,
-        location: `${weddingData.location.name}, ${weddingData.location.address}`,
-        ctz: 'Asia/Jakarta'
+        location: loc.name + ', ' + loc.address,
+        ctz: cal.timezone,
       });
-      const url = `https://calendar.google.com/calendar/render?${params.toString()}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
+      window.open(
+        'https://calendar.google.com/calendar/render?' + params.toString(),
+        '_blank',
+        'noopener,noreferrer'
+      );
     });
   }
+  // ================================================================
+  // END MODULE BOUNDARY: SIMPAN KE KALENDER
+  // ================================================================
 
-  // ==========================================================================
-  // 8. PETA
-  // --------------------------------------------------------------------------
-  // Tidak ada JS: peta memakai <iframe> statis di section #location (HTML).
-  // Link peta untuk kalender dibuat di initAddToCalendar() (bagian 7).
-  // ==========================================================================
+  // ================================================================
+  // MODULE BOUNDARY: GALERI SLIDER
+  // MEKANIKA UI (scroll, drag, dots, keyboard nav, breakpoint watch)
+  // TIDAK TERKAIT INJEKSI DATA — slide-nya sendiri sudah di-render
+  // oleh hydrateConfig() dari CONFIG.gallery.images; modul ini hanya
+  // membaca DOM hasil render tersebut (collectGalleryImages)
+  // ================================================================
+  let galleryImages = [];
+  let gallerySlideCount = 0;
+  let currentSlideIndex = 0;
+  let currentLightboxIndex = 0;
+  let scrollEndTimeoutId = null;
 
-  // ==========================================================================
-  // 9. GALERI (SLIDER) & LIGHTBOX
-  // --------------------------------------------------------------------------
-  // Modul Minggu 6 — TP-1 (layout responsif + lazy loading) & TP-2 (modal
-  // lightbox interaktif dengan navigasi Next/Prev/Close + keyboard).
-  //
-  // Struktur HTML (lihat index.html § GALERI):
-  //   #gallery-slider > #gallery-slider-track > beberapa .gallery-slider__slide
-  //   Tiap slide berisi <button data-lightbox-src="FOTO_PENUH" data-caption="...">
-  //
-  // DUA KOMPONEN TERPISAH, SALING MELENGKAPI:
-  //   A) initGallerySlider() — karusel INLINE di halaman. Satu foto penuh
-  //      tampil per waktu (BUKAN grid semua foto sekaligus, sesuai revisi
-  //      pembimbing). Geser dengan tombol ‹ › , titik indikator (dots),
-  //      SWIPE/sentuh (native lewat CSS scroll-snap, otomatis jalan di HP),
-  //      atau panah keyboard saat fokus di slider.
-  //   B) initLightbox() — modal pembesar foto. Dibuka dengan klik foto yang
-  //      sedang aktif di slider, lalu bisa menjelajah SEMUA foto galeri
-  //      (bukan cuma yang sedang tampil di slider) via tombol Prev/Next,
-  //      tombol Close, klik backdrop, atau keyboard (Escape/←/→).
-  //
-  // Kedua komponen berbagi satu sumber data: array `galleryImages`, dibangun
-  // otomatis dari DOM saat initGallerySlider() dijalankan — jadi menambah
-  // foto baru di HTML otomatis dikenali keduanya tanpa ubah JS.
-  // ==========================================================================
-
-  let galleryImages = [];       // [{ src, caption }], dibangun dari DOM
-  let gallerySlideCount = 0;    // jumlah slide (sinkron dgn galleryImages.length)
-  let currentSlideIndex = 0;    // slide yang sedang terlihat di karusel
-  let currentLightboxIndex = 0; // foto yang sedang tampil di modal lightbox
-  let scrollEndTimeoutId = null; // debounce untuk event 'scroll' pada track
-
-  /* ------------------------------ 9A. SLIDER ------------------------------ */
-
-  /**
-   * Bangun array galleryImages dari atribut data-lightbox-src/data-caption
-   * tiap slide, lalu generate titik indikator (dots) sejumlah slide.
-   * Dipanggil sekali di awal initGallerySlider().
-   */
   function collectGalleryImages() {
     const slideButtons = document.querySelectorAll('.gallery-slider__slide [data-lightbox-src]');
     galleryImages = Array.prototype.map.call(slideButtons, (btn) => ({
@@ -639,12 +574,6 @@
     gallerySlideCount = galleryImages.length;
   }
 
-  /**
-   * Jumlah foto yang tampil sekaligus di slider.
-   * Mobile/tablet (< 1024px): 1 foto (perilaku lama, TIDAK berubah).
-   * Desktop (>= 1024px): 3 foto. Breakpoint HARUS sama dengan media query
-   * "Gallery Slider — Desktop" di style.css (paling bawah file).
-   */
   const GALLERY_DESKTOP_QUERY = '(min-width: 1024px)';
   const GALLERY_DESKTOP_VISIBLE = 3;
 
@@ -653,20 +582,15 @@
     return isDesktop ? Math.min(GALLERY_DESKTOP_VISIBLE, gallerySlideCount) : 1;
   }
 
-  /** Indeks slide pertama terbesar yang masih menampilkan jendela penuh. */
   function getMaxSlideIndex() {
     return Math.max(0, gallerySlideCount - getVisibleSlides());
   }
 
-  /**
-   * Buat tombol-tombol dot di dalam #gallery-dots.
-   * Mobile: satu dot per foto (sama seperti sebelumnya).
-   * Desktop: satu dot per "posisi" slider (jumlah foto - 3 + 1).
-   */
   function buildGalleryDots() {
     if (!dom.galleryDots) return;
     dom.galleryDots.innerHTML = '';
 
+    const g = CONFIG.gallery;
     const visible = getVisibleSlides();
     const positions = getMaxSlideIndex() + 1;
 
@@ -678,8 +602,8 @@
       dot.setAttribute(
         'aria-label',
         visible > 1
-          ? `Lihat foto ${index + 1} sampai ${index + visible} dari ${gallerySlideCount}`
-          : `Lihat foto ${index + 1} dari ${gallerySlideCount}`
+          ? `${g.statusRangePrefix} ${index + 1} ${g.statusRangeMiddle} ${index + visible} ${g.statusOf} ${gallerySlideCount}`
+          : `${g.statusRangePrefix} ${index + 1} ${g.statusOf} ${gallerySlideCount}`
       );
       dot.addEventListener('click', () => goToSlide(index));
       dom.galleryDots.appendChild(dot);
@@ -688,17 +612,12 @@
     updateGalleryDots();
   }
 
-  /**
-   * Status tombol Prev/Next. Hanya di desktop (3 foto) tombol dinonaktifkan
-   * di ujung slider; di mobile tombol tidak pernah dinonaktifkan (perilaku lama).
-   */
   function updateGalleryNavState() {
     const limitEnds = getVisibleSlides() > 1;
     if (dom.galleryPrevBtn) dom.galleryPrevBtn.disabled = limitEnds && currentSlideIndex <= 0;
     if (dom.galleryNextBtn) dom.galleryNextBtn.disabled = limitEnds && currentSlideIndex >= getMaxSlideIndex();
   }
 
-  /** Tandai dot yang aktif (sesuai currentSlideIndex) dan update status teks a11y. */
   function updateGalleryDots() {
     if (dom.galleryDots) {
       const dots = dom.galleryDots.querySelectorAll('.gallery-slider__dot');
@@ -708,22 +627,15 @@
       });
     }
     if (dom.galleryStatus) {
+      const g = CONFIG.gallery;
       const visible = getVisibleSlides();
       dom.galleryStatus.textContent = visible > 1
-        ? `Foto ${currentSlideIndex + 1}–${currentSlideIndex + visible} dari ${gallerySlideCount}`
-        : `Foto ${currentSlideIndex + 1} dari ${gallerySlideCount}`;
+        ? `${g.statusMultiple} ${currentSlideIndex + 1}–${currentSlideIndex + visible} ${g.statusOf} ${gallerySlideCount}`
+        : `${g.statusMultiple} ${currentSlideIndex + 1} ${g.statusOf} ${gallerySlideCount}`;
     }
     updateGalleryNavState();
   }
 
-  /**
-   * Animasi geser DESKTOP. scrollTo({behavior:'smooth'}) + scroll-snap sering
-   * terasa patah-patah (browser menganimasi lalu "menyentak" ke titik snap).
-   * Di sini snap dimatikan sementara (class .is-animating), posisi digerakkan
-   * per frame dengan easing, lalu snap dinyalakan lagi di posisi yang sudah
-   * pas sehingga tidak ada lompatan. Interaksi pengguna (wheel/sentuh/drag)
-   * membatalkan animasi agar tidak melawan gerakan tangan.
-   */
   let trackAnimId = null;
 
   function cancelTrackAnimation() {
@@ -747,7 +659,7 @@
 
     const step = (now) => {
       const t = Math.min((now - t0) / duration, 1);
-      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; // easeInOutCubic
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       track.scrollLeft = start + delta * eased;
       if (t < 1) {
         trackAnimId = window.requestAnimationFrame(step);
@@ -760,12 +672,6 @@
     trackAnimId = window.requestAnimationFrame(step);
   }
 
-  /**
-   * Geser track ke slide ke-`index` (dibatasi 0..getMaxSlideIndex()).
-   * Mobile: batas = jumlah foto - 1 (sama seperti sebelumnya).
-   * Desktop: batas = jumlah foto - 3, agar jendela 3 foto selalu penuh.
-   * Dipakai tombol Prev/Next, dot, dan keyboard panah.
-   */
   function goToSlide(index, instant) {
     if (!dom.gallerySliderTrack || gallerySlideCount === 0) return;
     const clamped = Math.max(0, Math.min(index, getMaxSlideIndex()));
@@ -773,8 +679,6 @@
     if (!slide) return;
 
     if (getVisibleSlides() > 1 && !instant && !prefersReducedMotion()) {
-      // Desktop (3 foto): animasi rAF sendiri agar mulus & tidak bentrok
-      // dengan scroll-snap (lihat animateTrackTo).
       animateTrackTo(slide.offsetLeft);
     } else {
       cancelTrackAnimation();
@@ -783,18 +687,10 @@
         behavior: instant || prefersReducedMotion() ? 'auto' : 'smooth',
       });
     }
-    // currentSlideIndex & dots akan ikut diperbarui oleh listener 'scroll'
-    // (lihat handleSliderScroll), tapi diset langsung juga agar klik dot
-    // beruntun terasa responsif tanpa menunggu event scroll selesai.
     currentSlideIndex = clamped;
     updateGalleryDots();
   }
 
-  /**
-   * Dipanggil tiap event 'scroll' pada track (mis. saat pengguna swipe
-   * manual). Di-debounce 120ms supaya tidak menghitung ulang di tiap frame
-   * scroll — baru dihitung saat gerakan scroll mereda (mendekati "scrollend").
-   */
   function handleSliderScroll() {
     window.clearTimeout(scrollEndTimeoutId);
     scrollEndTimeoutId = window.setTimeout(() => {
@@ -816,7 +712,6 @@
     }, 120);
   }
 
-  /** Pasang listener keyboard (←/→) saat slider sedang difokus. */
   function initGalleryKeyboardNav() {
     if (!dom.gallerySlider) return;
     dom.gallerySlider.addEventListener('keydown', (event) => {
@@ -836,11 +731,6 @@
     });
   }
 
-  /**
-   * Saat viewport melintasi breakpoint desktop (mis. resize/rotate), jumlah
-   * foto per tampilan berubah: bangun ulang dot, rapikan indeks aktif, lalu
-   * sejajarkan track tanpa animasi. Tidak berjalan selama ukuran tetap.
-   */
   function initGalleryBreakpointWatch() {
     if (!window.matchMedia) return;
     const mql = window.matchMedia(GALLERY_DESKTOP_QUERY);
@@ -855,11 +745,6 @@
     }
   }
 
-  /**
-   * Desktop saja: foto digeser cepat, jadi muat semua lebih awal (bukan
-   * lazy) dan decode di luar main thread — mencegah macet saat foto baru
-   * masuk layar. Mobile tidak disentuh (tetap loading="lazy").
-   */
   function prepareGalleryImages() {
     const imgs = dom.gallerySliderTrack.querySelectorAll('.gallery-slider__img');
     const apply = () => {
@@ -876,11 +761,6 @@
     }
   }
 
-  /**
-   * Inisialisasi karusel galeri. Guard di awal membuat section #gallery
-   * aman dinonaktifkan (di-comment di HTML) tanpa memicu error di sini
-   * maupun di initLightbox().
-   */
   function initGallerySlider() {
     if (!dom.gallerySlider || !dom.gallerySliderTrack) return;
 
@@ -895,13 +775,7 @@
     if (dom.galleryNextBtn) {
       dom.galleryNextBtn.addEventListener('click', () => goToSlide(currentSlideIndex + 1));
     }
-
-    // Swipe/sentuh/trackpad TIDAK butuh JS tambahan: track memakai CSS
-    // `overflow-x: auto; scroll-snap-type: x mandatory;` (lihat style.css
-    // § Gallery Slider) sehingga browser menangani gesture secara native.
     dom.gallerySliderTrack.addEventListener('scroll', handleSliderScroll, { passive: true });
-
-    // Gerakan tangan pengguna membatalkan animasi tombol yang sedang berjalan.
     ['wheel', 'touchstart', 'pointerdown'].forEach((evt) => {
       dom.gallerySliderTrack.addEventListener(evt, cancelTrackAnimation, { passive: true });
     });
@@ -911,40 +785,41 @@
     initGalleryBreakpointWatch();
     initLightbox();
   }
+  // ================================================================
+  // END MODULE BOUNDARY: GALERI SLIDER
+  // ================================================================
 
-  /* ----------------------------- 9B. LIGHTBOX ----------------------------- */
-
-  /** Tampilkan foto ke-`index` di modal lightbox (dibatasi & dibungkus/wrap-around). */
+  // ================================================================
+  // MODULE BOUNDARY: LIGHTBOX
+  // MEKANIKA UI — TIDAK TERKAIT INJEKSI DATA
+  // (membaca ulang galleryImages yang sudah dikumpulkan oleh modul Galeri Slider)
+  // ================================================================
   function renderLightboxImage(index) {
     if (!dom.lightbox || !dom.lightboxImg || gallerySlideCount === 0) return;
 
-    // Wrap-around: dari foto terakhir -> Next kembali ke foto pertama, dst.
     currentLightboxIndex = (index + gallerySlideCount) % gallerySlideCount;
     const image = galleryImages[currentLightboxIndex];
 
     dom.lightboxImg.src = image.src;
-    dom.lightboxImg.alt = image.caption || `Foto galeri ${currentLightboxIndex + 1}`;
+    dom.lightboxImg.alt = image.caption || CONFIG.gallery.previewAlt;
     if (dom.lightboxCaption) {
       dom.lightboxCaption.textContent = image.caption || '';
     }
   }
 
-  /** Buka lightbox mulai dari foto ke-`index` & kunci scroll halaman. */
   function openLightbox(index) {
     if (!dom.lightbox || !dom.lightboxImg) return;
     renderLightboxImage(index);
     dom.lightbox.classList.add('is-open');
-    dom.body.classList.add('lightbox-open'); // style.css: overflow:hidden selama modal terbuka
+    dom.body.classList.add('lightbox-open');
   }
 
-  /** Tutup lightbox & buka kembali scroll halaman. */
   function closeLightbox() {
     if (!dom.lightbox) return;
     dom.lightbox.classList.remove('is-open');
     dom.body.classList.remove('lightbox-open');
   }
 
-  /** Navigasi ke foto berikutnya/sebelumnya di DALAM lightbox (bukan slider utama). */
   function showNextLightboxImage() {
     renderLightboxImage(currentLightboxIndex + 1);
   }
@@ -952,32 +827,17 @@
     renderLightboxImage(currentLightboxIndex - 1);
   }
 
-  /**
-   * Pasang semua listener lightbox: klik slide (buka), tombol close/prev/next,
-   * klik backdrop (tutup), dan keyboard Escape/ArrowLeft/ArrowRight — tapi
-   * keyboard HANYA aktif saat lightbox sedang terbuka, agar tidak bentrok
-   * dengan keyboard nav slider (Bagian 9A) saat lightbox tertutup.
-   * Dipanggil dari initGallerySlider() setelah galleryImages terisi.
-   */
   function initLightbox() {
-    // Klik salah satu slide yang sedang aktif -> buka lightbox di foto itu
     const slideButtons = document.querySelectorAll('.gallery-slider__slide [data-lightbox-src]');
     slideButtons.forEach((btn, index) => {
       btn.addEventListener('click', () => openLightbox(index));
     });
 
-    if (dom.lightboxClose) {
-      dom.lightboxClose.addEventListener('click', closeLightbox);
-    }
-    if (dom.lightboxPrev) {
-      dom.lightboxPrev.addEventListener('click', showPrevLightboxImage);
-    }
-    if (dom.lightboxNext) {
-      dom.lightboxNext.addEventListener('click', showNextLightboxImage);
-    }
+    if (dom.lightboxClose) dom.lightboxClose.addEventListener('click', closeLightbox);
+    if (dom.lightboxPrev) dom.lightboxPrev.addEventListener('click', showPrevLightboxImage);
+    if (dom.lightboxNext) dom.lightboxNext.addEventListener('click', showNextLightboxImage);
     if (dom.lightbox) {
       dom.lightbox.addEventListener('click', (event) => {
-        // Tutup hanya jika yang diklik backdrop, bukan gambar/tombol navigasi
         if (event.target === dom.lightbox) closeLightbox();
       });
     }
@@ -989,53 +849,24 @@
       if (event.key === 'ArrowLeft') showPrevLightboxImage();
     });
   }
+  // ================================================================
+  // END MODULE BOUNDARY: LIGHTBOX
+  // ================================================================
 
-  // ==========================================================================
-  // 10. VIDEO
-  // --------------------------------------------------------------------------
-  // Modul TP-3: video disematkan via <iframe> YouTube yang responsif
-  // (wrapper rasio 16:9, lihat style.css § .video-wrapper) dengan
-  // `loading="lazy"` di HTML. Karena kontrol play/pause/fullscreen sudah
-  // ditangani bawaan oleh player YouTube di dalam iframe, TIDAK ADA LAGI
-  // logika JS kustom di sini (initVideoTeaser() versi lama — poster gambar
-  // + tombol play + elemen <video> lokal — sudah tidak dipakai & tidak
-  // dipanggil dari init(), lihat Bagian 15).
-  // ==========================================================================
+  // ================================================================
+  // MODULE BOUNDARY: AUDIO GAMELAN
+  // MEKANIKA UI (play/pause, fade volume) — TIDAK TERKAIT INJEKSI DATA
+  // (elemen <source src> & label lagunya sendiri sudah disuntik dari
+  //  CONFIG.assets.audio oleh hydrateConfig() di atas)
+  // ================================================================
+  let isAudioPlaying = false;
+  let audioFadeId = null;
+  let hasAudioEverPlayed = false;
+  const AUDIO_TARGET_VOLUME = 0.7;
+  const AUDIO_FADE_IN_MS = 100;
+  const AUDIO_RESUME_FADE_MS = 700;
+  const AUDIO_FADE_OUT_MS = 600;
 
-  // ==========================================================================
-  // 11. AUDIO  (Modul Minggu 7 — TP-2 & TP-3)
-  // --------------------------------------------------------------------------
-  // Musik gamelan latar + widget melayang (#audio-widget, lihat index.html [02]).
-  //
-  // ALUR:
-  //   1. Tamu klik "Buka Undangan" -> initOpeningCurtain() memanggil
-  //      attemptAutoplayAudio() LANGSUNG di handler klik (bypass kebijakan
-  //      autoplay browser, termasuk iOS Safari).
-  //   2. playAudio() memutar dengan volume 0 lalu fade-in perlahan.
-  //      Promise play() ditangani: jika diblokir/gagal, state tetap "paused"
-  //      dan tamu bisa menekan tombol widget secara manual.
-  //   3. Tombol widget = toggle play/pause. State dikelola variabel
-  //      isAudioPlaying dan disinkronkan ke tombol lewat class
-  //      "playing"/"paused", aria-pressed, dan aria-label dinamis.
-  //      State "paused" menampilkan ikon musik DICORET (lihat style.css).
-  //
-  // File audio: assets/audio/Kebo Giro.mp3 (atau KeboGiro.mp3), MP3 < 1MB.
-  // ==========================================================================
-
-  let isAudioPlaying = false;      // status pemutaran (sumber kebenaran UI)
-  let audioFadeId = null;          // ID requestAnimationFrame fade aktif
-  let hasAudioEverPlayed = false;  // sudah pernah mulai diputar sekali? (lihat playAudio())
-  const AUDIO_TARGET_VOLUME = 0.7;  // volume akhir musik latar (0..1)
-  const AUDIO_FADE_IN_MS = 100;    // lama fade-in HANYA saat PERTAMA KALI diputar (buka undangan)
-  const AUDIO_RESUME_FADE_MS = 700; // lama fade singkat saat musik DILANJUTKAN setelah dijeda manual
-  const AUDIO_FADE_OUT_MS = 600;    // lama fade-out saat dijeda
-
-  /**
-   * Ubah volume audio bertahap ke `target` selama `duration` ms.
-   * Pemanggilan baru membatalkan fade sebelumnya (termasuk onDone-nya).
-   * Catatan: iOS Safari mengabaikan audio.volume (selalu 1), jadi di sana
-   * fade tidak terdengar tetapi tidak menimbulkan error.
-   */
   function fadeAudioTo(target, duration, onDone) {
     if (!dom.audioEl) return;
     if (audioFadeId !== null) {
@@ -1058,39 +889,18 @@
     audioFadeId = window.requestAnimationFrame(step);
   }
 
-  /**
-   * Putar musik. Aman dari penolakan autoplay (Promise ditangani).
-   *
-   * BUGFIX (revisi pembimbing — "lagu kayak mundur beberapa detik saat
-   * di-pause lalu diputar lagi"): audio.pause()/.play() TIDAK pernah
-   * mengubah currentTime (lagu selalu lanjut dari posisi terakhir — itu
-   * bawaan HTMLMediaElement), tapi kode lama men-set volume = 0 lalu
-   * fade-in PELAN (2 detik) SETIAP KALI playAudio() dipanggil — termasuk
-   * saat tombol widget ditekan lagi setelah dijeda manual. Dua detik nyaris
-   * tanpa suara itu membuat pendengar merasa lagu "meloncat mundur" karena
-   * bagian lagu yang terdengar begitu suara kembali normal terasa asing.
-   * FIX: fade-in PELAN dari senyap HANYA pada pemutaran PERTAMA KALI (saat
-   * tombol "Buka Undangan" di curtain memicu attemptAutoplayAudio()).
-   * Resume berikutnya (tombol widget musik) pakai fade SINGKAT dari volume
-   * saat ini ke volume target — currentTime tetap melanjutkan, tanpa jeda
-   * senyap yang terasa seperti "restart".
-   */
   function playAudio() {
     if (!dom.audioEl) return;
     const isFirstPlay = !hasAudioEverPlayed;
     if (isFirstPlay && dom.audioEl.paused) {
-      dom.audioEl.volume = 0; // hanya pemutaran pertama: mulai senyap lalu naik perlahan
+      dom.audioEl.volume = 0;
     }
 
     const onStarted = () => {
       isAudioPlaying = true;
       hasAudioEverPlayed = true;
       updateAudioButtonState();
-      if (isFirstPlay) {
-        fadeAudioTo(AUDIO_TARGET_VOLUME, AUDIO_FADE_IN_MS);
-      } else {
-        fadeAudioTo(AUDIO_TARGET_VOLUME, AUDIO_RESUME_FADE_MS);
-      }
+      fadeAudioTo(AUDIO_TARGET_VOLUME, isFirstPlay ? AUDIO_FADE_IN_MS : AUDIO_RESUME_FADE_MS);
     };
 
     let result;
@@ -1102,18 +912,16 @@
 
     if (result && typeof result.then === 'function') {
       result.then(onStarted).catch((err) => {
-        // Autoplay diblokir browser atau file audio belum tersedia.
-        console.warn('Audio tidak dapat diputar:', err);
+        console.warn(CONFIG.messages.audioError, err);
         isAudioPlaying = false;
         dom.audioEl.volume = AUDIO_TARGET_VOLUME;
         updateAudioButtonState();
       });
     } else {
-      onStarted(); // browser lama: play() tidak mengembalikan Promise
+      onStarted();
     }
   }
 
-  /** Jeda musik dengan fade-out singkat. UI langsung berubah ke state "paused". */
   function pauseAudio() {
     if (!dom.audioEl) return;
     isAudioPlaying = false;
@@ -1123,24 +931,21 @@
     });
   }
 
-  /** Dipanggil saat tombol "Buka Undangan" diklik (lihat initOpeningCurtain). */
   function attemptAutoplayAudio() {
     playAudio();
   }
 
-  /**
-   * Sinkronkan tombol dengan state: class playing/paused, aria-pressed
-   * (dibaca CSS), dan aria-label dinamis untuk pembaca layar.
-   */
   function updateAudioButtonState() {
     if (!dom.audioBtn) return;
     dom.audioBtn.classList.toggle('playing', isAudioPlaying);
     dom.audioBtn.classList.toggle('paused', !isAudioPlaying);
     dom.audioBtn.setAttribute('aria-pressed', String(isAudioPlaying));
-    dom.audioBtn.setAttribute('aria-label', isAudioPlaying ? 'Jeda Musik Latar' : 'Putar Musik Latar');
+    dom.audioBtn.setAttribute(
+      'aria-label',
+      isAudioPlaying ? CONFIG.messages.audioPauseAria : CONFIG.messages.audioPlayAria
+    );
   }
 
-  /** Tombol audio: toggle play/pause + sinkron dengan kontrol sistem (media key, dll). */
   function initAudioController() {
     if (!dom.audioBtn || !dom.audioEl) return;
 
@@ -1154,8 +959,6 @@
       }
     });
 
-    // Jika audio dijeda/diputar dari luar widget (tombol media, headset),
-    // ikon ikut menyesuaikan.
     dom.audioEl.addEventListener('pause', () => {
       if (isAudioPlaying) {
         isAudioPlaying = false;
@@ -1169,34 +972,29 @@
       }
     });
     dom.audioEl.addEventListener('error', () => {
-      console.warn('File audio tidak ditemukan di assets/audio/ (Kebo Giro.mp3 / KeboGiro.mp3).');
+      console.warn(CONFIG.messages.audioError);
     }, true);
   }
+  // ================================================================
+  // END MODULE BOUNDARY: AUDIO GAMELAN
+  // ================================================================
 
-  // ==========================================================================
-  // 12. HADIAH DIGITAL / AMPLOP DIGITAL  (Modul Minggu 5 + revisi pembimbing)
-  // --------------------------------------------------------------------------
-  // Section #gift (index.html). Dua fitur:
-  //   A) initGiftToggle()  — isi amplop (rekening + alamat) TERTUTUP di awal;
-  //      tombol #gift-toggle membuka/menutupnya. Animasi tinggi diatur CSS
-  //      (class .is-open pada #gift-panel); JS hanya mengatur state & ARIA.
-  //   B) initCopyButtons() — tombol apa pun dengan data-copy-value="TEKS"
-  //      (opsional data-copy-message="PESAN_TOAST") menyalin lewat Clipboard
-  //      API. Tombol memberi umpan balik "Tersalin!" selama 2 detik.
-  // ==========================================================================
+  // ================================================================
+  // MODULE BOUNDARY: AMPLOP DIGITAL (GIFT PANEL + TOMBOL SALIN)
+  // MEKANIKA UI — TIDAK TERKAIT INJEKSI DATA
+  // (kartu bank & nilai data-copy-* sudah disuntik oleh hydrateConfig();
+  //  modul ini hanya menangani perilaku buka/tutup panel dan efek salin)
+  // ================================================================
+  const COPY_FEEDBACK_MS = 2000;
 
-  const COPY_FEEDBACK_MS = 2000; // lama teks "Tersalin!" tampil di tombol
-
-  /** Buka/tutup panel amplop dan sinkronkan aria-expanded + label tombol. */
   function setGiftOpen(isOpen) {
     if (!dom.giftPanel || !dom.giftToggle) return;
     dom.giftPanel.classList.toggle('is-open', isOpen);
     dom.giftToggle.setAttribute('aria-expanded', String(isOpen));
     const label = dom.giftToggle.querySelector('.gift__toggle-label');
-    if (label) label.textContent = isOpen ? 'Tutup Amplop Digital' : 'Buka Amplop Digital';
+    if (label) label.textContent = isOpen ? CONFIG.gift.closeButton : CONFIG.gift.openButton;
   }
 
-  /** Pasang listener tombol buka/tutup amplop (state awal: tertutup). */
   function initGiftToggle() {
     if (!dom.giftPanel || !dom.giftToggle) return;
     setGiftOpen(false);
@@ -1205,11 +1003,6 @@
     });
   }
 
-  /**
-   * Umpan balik tombol Salin: teks -> "Tersalin!", ikon -> centang, warna
-   * hijau (class .is-copied) lalu kembali normal setelah COPY_FEEDBACK_MS.
-   * Klik beruntun tidak menumpuk timer.
-   */
   function showCopyFeedback(btn) {
     const label = btn.querySelector('.btn__label');
     const icon = btn.querySelector('.material-symbols-outlined');
@@ -1218,7 +1011,7 @@
 
     window.clearTimeout(btn._copyTimer);
     btn.classList.add('is-copied');
-    if (label) label.textContent = 'Tersalin!';
+    if (label) label.textContent = CONFIG.gift.copiedLabel;
     if (icon) icon.textContent = 'check';
 
     btn._copyTimer = window.setTimeout(() => {
@@ -1228,47 +1021,27 @@
     }, COPY_FEEDBACK_MS);
   }
 
-  /** Pasang listener salin pada semua elemen [data-copy-value]. */
   function initCopyButtons() {
     const buttons = document.querySelectorAll('[data-copy-value]');
     buttons.forEach((btn) => {
       btn.addEventListener('click', () => {
         const value = btn.getAttribute('data-copy-value');
-        const message = btn.getAttribute('data-copy-message') || 'Berhasil disalin!';
+        const message = btn.getAttribute('data-copy-message') || CONFIG.messages.copyFallback;
         copyToClipboard(value, message, () => showCopyFeedback(btn));
       });
     });
   }
+  // ================================================================
+  // END MODULE BOUNDARY: AMPLOP DIGITAL
+  // ================================================================
 
-  // ==========================================================================
-  // 13. BUKU TAMU (GUESTBOOK) — integrasi Google Sheets via Google Apps Script
-  // --------------------------------------------------------------------------
-  // Section #wishes: form #guestbook-form (nama, kehadiran Hadir/Tidak
-  // Hadir, pesan) + feed #wishes-container. Google Sheets adalah SATU-
-  // SATUNYA sumber data (tidak ada localStorage/data dummy).
-  //
-  // Alur:
-  //   initGuestbookForm()      -> pasang listener submit, lalu panggil
-  //                                fetchGuestbookEntries() sekali saat load
-  //                                (guard: butuh GUESTBOOK_API_URL terisi)
-  //   handleGuestbookSubmit()  -> validasi (checkValidity), kirim POST
-  //                                (FormData, TANPA reload) ke Apps Script,
-  //                                tombol -> mode loading, lalu sukses/gagal
-  //   fetchGuestbookEntries()  -> GET daftar terbaru, render skeleton dulu
-  //   renderGuestbookEntries() -> bangun kartu ucapan dari respons JSON,
-  //                                escapeHtml() di tiap field (anti-XSS)
-  //
-  // PENTING: nama field FormData ("nama", "kehadiran", "pesan") HARUS sama
-  // persis dengan e.parameter yang dibaca Code.gs (doPost) di Apps Script —
-  // dan HARUS sama dengan urutan kolom Google Sheets: TIMESTAMP | NAMA |
-  // KEHADIRAN | PESAN (TIMESTAMP diisi otomatis oleh Apps Script, bukan JS).
-  // ==========================================================================
-
-  /**
-   * Tampilkan/kosongkan pesan status (sukses/gagal) di bawah form Guestbook.
-   * @param {string} message - kosongkan ('') untuk menyembunyikan lagi.
-   * @param {'success'|'error'|null} type
-   */
+  // ================================================================
+  // MODULE BOUNDARY: BUKU TAMU (GUESTBOOK)
+  // DATA EKSTERNAL (Google Sheets via Apps Script Web App) — DIRENDER
+  // DARI HASIL fetch() SAAT RUNTIME, BUKAN DARI WEDDING_CONFIG. Hanya
+  // label teks statusnya (loading/success/error, dsb) yang berasal dari
+  // CONFIG.wishes, hasil injeksi hydrateConfig() sebelumnya.
+  // ================================================================
   function setGuestbookStatus(message, type) {
     if (!dom.guestbookStatus) return;
     dom.guestbookStatus.textContent = message;
@@ -1279,42 +1052,29 @@
     dom.guestbookStatus.classList.toggle('is-visible', Boolean(message));
   }
 
-  /** Alihkan tombol submit ke mode loading ("Mengirimkan...") atau normal. */
   function setGuestbookLoading(isLoading) {
     if (!dom.guestbookSubmitBtn) return;
     dom.guestbookSubmitBtn.disabled = isLoading;
     dom.guestbookSubmitBtn.classList.toggle('is-loading', isLoading);
     const label = dom.guestbookSubmitBtn.querySelector('.guestbook-form__submit-label');
-    if (label) label.textContent = isLoading ? 'Sedang mengirim...' : 'Kirim Ucapan';
+    if (label) label.textContent = isLoading ? CONFIG.wishes.loading : CONFIG.wishes.submit;
   }
 
   let isGuestbookSubmitting = false;
 
-  /**
-   * Proses submit form Guestbook: intersepsi reload (e.preventDefault()),
-   * validasi HTML5 native, kirim POST ke Apps Script via FormData (TANPA
-   * header Content-Type manual — supaya tetap "simple request" & lolos CORS
-   * default Apps Script tanpa perlu preflight OPTIONS), lalu tangani
-   * sukses/gagal dan segarkan daftar ucapan.
-   */
+  // ----------------------------------------------------------------
+  // SUB-BOUNDARY: handleGuestbookSubmit — kirim form (POST) ke Apps Script
+  // ----------------------------------------------------------------
   function handleGuestbookSubmit(event) {
     event.preventDefault();
     if (!dom.guestbookForm) return;
-
-    // Guard anti-duplikat: abaikan event 'submit' kedua selama proses
-    // pengiriman pertama belum selesai (lihat catatan `isGuestbookSubmitting`).
     if (isGuestbookSubmitting) return;
 
     if (!GUESTBOOK_API_URL) {
-      setGuestbookStatus(
-        'Guestbook belum terhubung ke server. Tempel URL Web App Google Apps Script pada GUESTBOOK_API_URL di script.js.',
-        'error'
-      );
+      setGuestbookStatus(CONFIG.wishes.serverNotConfigured, 'error');
       return;
     }
 
-    // Validasi bawaan HTML5 (required, dsb.) — fokuskan & tampilkan pesan
-    // native browser pada field pertama yang belum valid.
     if (!dom.guestbookForm.checkValidity()) {
       dom.guestbookForm.reportValidity();
       return;
@@ -1329,23 +1089,25 @@
       .then((response) => response.json())
       .then((result) => {
         if (result && result.result === 'success') {
-          setGuestbookStatus('Terima kasih! Ucapan dan doa Anda telah berhasil kami terima.', 'success');
+          setGuestbookStatus(CONFIG.wishes.success, 'success');
           dom.guestbookForm.reset();
           fetchGuestbookEntries();
         } else {
-          setGuestbookStatus((result && result.message) || 'Gagal mengirim ucapan. Silakan coba kembali.', 'error');
+          setGuestbookStatus((result && result.message) || CONFIG.wishes.submitError, 'error');
         }
       })
       .catch(() => {
-        setGuestbookStatus('Gagal terhubung ke server. Silakan periksa koneksi internet Anda.', 'error');
+        setGuestbookStatus(CONFIG.wishes.connectionError, 'error');
       })
       .finally(() => {
         isGuestbookSubmitting = false;
         setGuestbookLoading(false);
       });
   }
+  // ----------------------------------------------------------------
+  // END SUB-BOUNDARY: handleGuestbookSubmit
+  // ----------------------------------------------------------------
 
-  /** Tampilkan beberapa kartu skeleton selagi menunggu respons GET pertama. */
   function renderGuestbookSkeleton() {
     if (!dom.wishesContainer) return;
     dom.wishesContainer.innerHTML =
@@ -1354,13 +1116,12 @@
       '<div class="wish-skeleton" aria-hidden="true"></div>';
   }
 
-  /** Format ISO timestamp dari Apps Script jadi label tanggal berbahasa Indonesia. */
   function formatWishTimestamp(isoString) {
     if (!isoString) return '';
     const date = new Date(isoString);
     if (Number.isNaN(date.getTime())) return '';
     try {
-      return date.toLocaleString('id-ID', {
+      return date.toLocaleString((CONFIG.site && CONFIG.site.locale) || 'id-ID', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
@@ -1372,14 +1133,14 @@
     }
   }
 
-  /**
-   * Render ulang seluruh daftar ucapan dari data Google Sheets (array hasil
-   * doGet). Server (Code.gs) sudah mengurutkan dari terbaru -> terlama lewat
-   * unshift(), jadi di sini TIDAK disortir ulang — urutan respons dipakai
-   * apa adanya. Semua teks dari pengguna (nama/pesan) di-escape lewat
-   * escapeHtml() sebelum masuk innerHTML untuk mencegah XSS.
-   * @param {Array<{timestamp:string,nama:string,kehadiran:string,pesan:string}>} entries
-   */
+  // ----------------------------------------------------------------
+  // SUB-BOUNDARY: renderGuestbookEntries — render kartu ucapan dari
+  // DATA EKSTERNAL hasil fetch() Google Sheets (entry.nama, entry.kehadiran,
+  // entry.pesan, entry.timestamp), BUKAN dari WEDDING_CONFIG.
+  // Render ulang daftar ucapan dari Google Sheets. Urutan dari server
+  // (terbaru -> terlama) dipakai apa adanya. Semua teks pengguna di-escape
+  // lewat escapeHtml() untuk mencegah XSS.
+  // ----------------------------------------------------------------
   function renderGuestbookEntries(entries) {
     if (!dom.wishesContainer) return;
     dom.wishesContainer.innerHTML = '';
@@ -1388,18 +1149,18 @@
       const empty = document.createElement('p');
       empty.className = 'wishes__empty';
       empty.id = 'wishes-empty';
-      empty.textContent = 'Belum ada ucapan. Jadilah yang pertama menyampaikan doa dan ucapan!';
+      empty.textContent = CONFIG.wishes.empty;
       dom.wishesContainer.appendChild(empty);
       return;
     }
 
     entries.forEach((entry) => {
-      const name = (entry && entry.nama) || 'Tamu Undangan';
-      const attendance = (entry && entry.kehadiran) || 'Hadir';
+      const name = (entry && entry.nama) || CONFIG.wishes.defaultGuest;
+      const attendance = (entry && entry.kehadiran) || CONFIG.wishes.defaultAttendance;
       const message = (entry && entry.pesan) || '';
       const timeLabel = formatWishTimestamp(entry && entry.timestamp);
       const initials = getInitials(name);
-      const badgeModifier = attendance === 'Tidak Hadir' ? ' attendance-badge--tidak-hadir' : '';
+      const badgeModifier = attendance === CONFIG.wishes.notAttending ? ' attendance-badge--tidak-hadir' : '';
 
       const card = document.createElement('article');
       card.className = 'wish-card';
@@ -1417,29 +1178,19 @@
       dom.wishesContainer.appendChild(card);
     });
   }
+  // ----------------------------------------------------------------
+  // END SUB-BOUNDARY: renderGuestbookEntries
+  // ----------------------------------------------------------------
 
-  // Menyimpan permintaan GET #wishes-container yang sedang berjalan, supaya
-  // kalau fetchGuestbookEntries() dipanggil lagi sebelum yang sebelumnya
-  // selesai (mis. GET awal saat halaman dimuat masih lambat/cold-start Apps
-  // Script, lalu user langsung kirim ucapan sehingga GET kedua menyusul),
-  // permintaan LAMA dibatalkan via AbortController. Dengan begitu hanya
-  // SATU respons yang pernah dipakai me-render ulang daftar — mencegah
-  // respons "basi" yang datang belakangan menimpa/membuat daftar terasa
-  // tidak konsisten (render ganda/berkedip) saat dua permintaan tumpang
-  // tindih.
   let guestbookFetchController = null;
 
-  /**
-   * Ambil daftar ucapan terbaru dari Apps Script (HTTP GET) lalu render ke
-   * #wishes-container. Dipanggil saat halaman dimuat & setiap kali submit
-   * Guestbook berhasil, supaya feed selalu seketika/real-time tanpa reload.
-   */
+  // ----------------------------------------------------------------
+  // SUB-BOUNDARY: fetchGuestbookEntries — GET daftar ucapan dari Apps Script
+  // ----------------------------------------------------------------
   function fetchGuestbookEntries() {
     if (!dom.wishesContainer || !GUESTBOOK_API_URL) return;
 
-    if (guestbookFetchController) {
-      guestbookFetchController.abort();
-    }
+    if (guestbookFetchController) guestbookFetchController.abort();
     const controller = new AbortController();
     guestbookFetchController = controller;
 
@@ -1448,7 +1199,7 @@
     fetch(GUESTBOOK_API_URL, { method: 'GET', signal: controller.signal })
       .then((response) => response.json())
       .then((result) => {
-        if (controller.signal.aborted) return; // sudah digantikan permintaan lebih baru
+        if (controller.signal.aborted) return;
         if (result && result.result === 'success') {
           renderGuestbookEntries(result.data || []);
         } else {
@@ -1456,63 +1207,55 @@
         }
       })
       .catch((err) => {
-        if (err && err.name === 'AbortError') return; // dibatalkan sengaja, bukan error sungguhan
+        if (err && err.name === 'AbortError') return;
         if (!dom.wishesContainer) return;
         dom.wishesContainer.innerHTML =
-          '<p class="wishes__empty">Gagal mengambil ucapan dari server. Silakan muat ulang halaman ini.</p>';
+          '<p class="wishes__empty">' + escapeHtml(CONFIG.wishes.loadError) + '</p>';
       });
   }
+  // ----------------------------------------------------------------
+  // END SUB-BOUNDARY: fetchGuestbookEntries
+  // ----------------------------------------------------------------
 
-  /** Pasang listener submit & ambil daftar ucapan pertama kali. */
   function initGuestbookForm() {
     if (!dom.guestbookForm) return;
     dom.guestbookForm.addEventListener('submit', handleGuestbookSubmit);
 
     if (!GUESTBOOK_API_URL) {
-      // Tanpa URL API: tampilkan state kosong statis, jangan fetch apa pun.
       renderGuestbookEntries([]);
       return;
     }
     fetchGuestbookEntries();
   }
+  // ================================================================
+  // END MODULE BOUNDARY: BUKU TAMU (GUESTBOOK)
+  // ================================================================
 
-  /** Escape karakter HTML pada teks input pengguna (mis. "<b>" -> "&lt;b&gt;"). */
-  function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str == null ? '' : String(str);
-    return div.innerHTML;
-  }
-
-  // ==========================================================================
-  // 14. INISIALISASI
-  // --------------------------------------------------------------------------
-  // Titik masuk tunggal. Untuk fitur baru: buat initFiturBaru() dengan
-  // guard `if (!dom.xxx) return;`, lalu panggil di init() di bawah.
-  // initScrollReveal() sengaja tidak dipanggil di sini; ia dipicu setelah
-  // sampul dibuka (bagian 4).
-  //
-  // initVideoTeaser() TIDAK dipanggil lagi: video sekarang iframe YouTube
-  // tanpa kontrol JS kustom (lihat catatan Bagian 10).
-  // ==========================================================================
-
+  // ================================================================
+  // MODULE BOUNDARY: INIT (ENTRY POINT)
+  // Urutan panggilan penting: hydrateConfig() WAJIB jalan pertama kali
+  // karena seluruh modul UI di bawahnya (nav, galeri, audio, dsb)
+  // membaca DOM yang sudah disuntik data dari WEDDING_CONFIG.
+  // ================================================================
   function init() {
-    initGuestName();       // bagian 4
-    initOpeningCurtain();  // bagian 4
-    initCountdown();       // bagian 6
-    initAddToCalendar();   // bagian 7
-    initGallerySlider();   // bagian 9 (juga memanggil initLightbox() di dalamnya)
-    initAudioController(); // bagian 11
-    initGiftToggle();      // bagian 12 (buka/tutup amplop digital)
-    initCopyButtons();     // bagian 12
-    initGuestbookForm();   // bagian 13 (form Guestbook + feed Google Sheets)
-    initBottomNav();       // bagian 5b (navbar bawah mengambang)
+    hydrateConfig();        // 1. Mesin injeksi data — WAJIB paling awal
+    initGuestName();         // 2. Override nama tamu dari query string
+    initOpeningCurtain();    // 3. Animasi tirai pembuka
+    initAddToCalendar();     // 4. Tombol simpan ke kalender (konsumen CONFIG)
+    initGallerySlider();     // 5. Mekanika galeri (butuh DOM hasil injeksi)
+    initAudioController();   // 6. Kontrol audio
+    initGiftToggle();        // 7. Buka/tutup panel amplop digital
+    initCopyButtons();       // 8. Tombol salin (rekening & alamat)
+    initGuestbookForm();     // 9. Form + daftar ucapan (data eksternal)
+    initBottomNav();         // 10. Scroll-spy navigasi bawah
 
-    // Jika halaman sudah `is-unlocked` saat dimuat (mis. testing tanpa sampul),
-    // jalankan scroll-reveal langsung.
     if (dom.body.classList.contains('is-unlocked')) {
       initScrollReveal();
     }
   }
 
   document.addEventListener('DOMContentLoaded', init);
+  // ================================================================
+  // END MODULE BOUNDARY: INIT (ENTRY POINT)
+  // ================================================================
 })();
