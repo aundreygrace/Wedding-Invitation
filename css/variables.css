@@ -1,0 +1,91 @@
+/* ============================================ */
+/* DESIGN TOKENS BOUNDARY MARKER */
+/* AREA INI MENGGUNAKAN DYNAMIC INJECTION CONFIG */
+/* Centralized Visual Style Tokens — Minggu 11 */
+/* Semua warna, tipografi, radius, spacing, shadow, dan transisi */
+/* didefinisikan sebagai CSS Custom Properties di :root. */
+/* Ubah tampilan global website hanya dari berkas ini. */
+/* ============================================ */
+:root {
+    /* Tokens Warna (Color Palette) */
+    --sogan-deep: #1a0f07;
+    --sogan-deep-rgb: 26, 15, 7;
+    --sogan-dark: #23140a;
+    --sogan-card: #2d1a0d;
+    --sogan-card-rgb: 45, 26, 13;
+    --primary-container: #3b2414;
+    --primary-container-rgb: 59, 36, 20;
+
+    --gold-bright: #D4AF37;
+    --gold-bright-rgb: 212, 175, 55;
+    --gold-muted: #C49A45;
+    --gold-foil: #E6D19C;
+
+    --parchment-canvas: #FBF7F2;
+    --parchment-tint: #F4EFE6;
+    --jasmine-white: #FFFDF9;
+
+    --wood-terracotta: #8C5E35;
+    --charcoal-ink: #22201E;
+    --body-text: #eedfcc;
+    --body-text-rgb: 238, 223, 204;
+
+    /* Warna status/sistem (sebelumnya hardcoded di style.css) */
+    --color-danger: #e07a5f;
+    --color-danger-rgb: 224, 122, 95;
+    --color-success: #3f7d4e;
+    --color-white: #ffffff;
+    --color-black: #000000;
+    --color-black-rgb: 0, 0, 0;
+    --color-map-bg: #21170f;
+
+    /* Tokens Tipografi */
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+
+    --fs-display-hero: 56px;
+    --fs-display-hero-mobile: 38px;
+    --fs-headline-lg: 36px;
+    --fs-headline-lg-mobile: 28px;
+    --fs-headline-md: 26px;
+    --fs-headline-sm: 20px;
+    --fs-title-script: 22px;
+    --fs-body-lg: 18px;
+    --fs-body-md: 15px;
+    --fs-body-sm: 13px;
+    --fs-label-caps: 11px;
+    --fs-label-md: 14px;
+
+    /* Tokens Shape & Elevation */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+    --radius-full: 9999px;
+
+    /* Tokens Spasi (kelipatan 8px / 0.5rem) */
+    --gutter: 1.5rem;
+    --gutter-mobile: 1rem;
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.75rem;
+    --space-xl: 3rem;
+    --space-2xl: 5rem;
+
+    --bottom-nav-clearance: 6rem;
+
+    --shadow-standard: 0 12px 36px -8px rgba(var(--primary-container-rgb), 0.35), 0 4px 12px -2px rgba(var(--primary-container-rgb), 0.2);
+    --shadow-glow-gold: 0 10px 30px rgba(var(--gold-bright-rgb), 0.4);
+
+    --content-max: 1140px;
+
+    /* Tokens Transisi (menstandarkan durasi animasi elemen interaktif) */
+    --transition-fast: 200ms;
+    --transition-base: 300ms;
+    --transition-smooth: 400ms;
+    --transition-slow: 500ms;
+  }
+/* ============================================ */
+/* END DESIGN TOKENS BOUNDARY MARKER */
+/* ============================================ */
