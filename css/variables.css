@@ -1,10 +1,18 @@
 /* ============================================ */
 /* DESIGN TOKENS BOUNDARY MARKER */
 /* AREA INI MENGGUNAKAN DYNAMIC INJECTION CONFIG */
+/* STATUS: SAFE TO EDIT (AREA AMAN EDIT WARNA & TIPOGRAFI) */
 /* Centralized Visual Style Tokens — Minggu 11 */
+/* ============================================ */
 /* Semua warna, tipografi, radius, spacing, shadow, dan transisi */
 /* didefinisikan sebagai CSS Custom Properties di :root. */
-/* Ubah tampilan global website hanya dari berkas ini. */
+/* Ubah tampilan global website HANYA dari berkas ini. */
+/*                                                        */
+/* PETUNJUK: Ganti nilai hex (#......) pada token warna, */
+/* atau nilai px/rem pada token ukuran, untuk mengubah */
+/* tema global secara instan di seluruh style.css. */
+/* JANGAN mengubah nama token (bagian --nama-token) — */
+/* hanya ubah NILAI di sebelah kanan tanda titik dua (:). */
 /* ============================================ */
 :root {
     /* Tokens Warna (Color Palette) */

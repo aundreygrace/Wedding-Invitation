@@ -1,5 +1,15 @@
 // ================================================================
 // WEDDING INVITATION - MAIN SCRIPT
+// STATUS: DO NOT EDIT (CORE SYSTEM — LOGIKA ENGINE TERPROTEKSI)
+// ================================================================
+// Berkas ini berisi mesin injeksi data (hydrateConfig) dan seluruh
+// logika interaktif situs (animasi, slider, form, dsb). Mengubah
+// berkas ini TANPA pengawasan developer berisiko merusak fungsionalitas
+// di seluruh halaman.
+//
+//   Berkas ini TIDAK PERLU dan TIDAK BOLEH diubah untuk memperbarui
+//   konten undangan. Seluruh data pernikahan diatur dari js/config.js.
+//
 // Peta modul berkas ini (urutan sesuai kemunculan di bawah):
 //   1. Util & Helper Injeksi      -> getConfigValue, bindAttribute, escapeHtml
 //   2. Template Injection Engine  -> hydrateConfig() (MESIN INJEKSI DATA UTAMA)
@@ -55,7 +65,7 @@
   };
 
   // ================================================================
-  // TEMPLATE INJECTION ENGINE BOUNDARY: HELPER PEMBANTU INJEKSI
+  // TEMPLATE INJECTION ENGINE BOUNDARY: HELPER PEMBANTU INJEKSI — STATUS: DO NOT EDIT
   // AREA INI MENANGANI PEMBACAAN NILAI BERSARANG DARI WEDDING_CONFIG
   // ================================================================
 
@@ -105,7 +115,7 @@
   // ================================================================
 
   // ================================================================
-  // TEMPLATE INJECTION ENGINE BOUNDARY: hydrateConfig()
+  // TEMPLATE INJECTION ENGINE BOUNDARY: hydrateConfig() — STATUS: DO NOT EDIT
   // AREA INI MENANGANI SELURUH INJEKSI DATA DARI WEDDING_CONFIG KE index.html
   // (scan [data-config-*] -> cocokkan path -> suntik ke DOM, lihat juga
   //  anotasi HTML TEMPLATE BOUNDARY MARKER pada index.html)
@@ -282,7 +292,7 @@
   // ================================================================
 
   // ================================================================
-  // MODULE BOUNDARY: HELPER UMUM (UI) — TIDAK TERKAIT INJEKSI DATA
+  // MODULE BOUNDARY: HELPER UMUM (UI) — TIDAK TERKAIT INJEKSI DATA — STATUS: DO NOT EDIT
   // Dipakai lintas modul: toast notifikasi, salin ke clipboard, inisial nama,
   // dan deteksi preferensi reduced-motion pengguna.
   // ================================================================
@@ -346,7 +356,7 @@
   // ================================================================
 
   // ================================================================
-  // MODULE BOUNDARY: NAMA TAMU DARI URL (?to=Nama / ?u=Nama)
+  // MODULE BOUNDARY: NAMA TAMU DARI URL (?to=Nama / ?u=Nama) — STATUS: DO NOT EDIT
   // DATA RUNTIME DARI QUERY STRING — BUKAN DARI WEDDING_CONFIG
   // ================================================================
   function initGuestName() {
@@ -361,7 +371,7 @@
   // ================================================================
 
   // ================================================================
-  // MODULE BOUNDARY: TIRAI PEMBUKA (OPENING CURTAIN) + SCROLL REVEAL
+  // MODULE BOUNDARY: TIRAI PEMBUKA (OPENING CURTAIN) + SCROLL REVEAL — STATUS: DO NOT EDIT
   // ANIMASI UI — TIDAK TERKAIT INJEKSI DATA
   // ================================================================
   function initOpeningCurtain() {
@@ -423,7 +433,7 @@
   // ================================================================
 
   // ================================================================
-  // MODULE BOUNDARY: NAVIGASI BAWAH (SCROLL-SPY)
+  // MODULE BOUNDARY: NAVIGASI BAWAH (SCROLL-SPY) — STATUS: DO NOT EDIT
   // MEKANIKA UI — TIDAK TERKAIT INJEKSI DATA
   // (daftar tautannya sendiri di-render oleh hydrateConfig() di atas,
   //  dari CONFIG.nav; modul ini hanya menangani perilaku scroll/klik-nya)
@@ -495,7 +505,7 @@
   // ================================================================
 
   // ================================================================
-  // MODULE BOUNDARY: SIMPAN KE KALENDER (GOOGLE CALENDAR)
+  // MODULE BOUNDARY: SIMPAN KE KALENDER (GOOGLE CALENDAR) — STATUS: DO NOT EDIT
   // KONSUMEN DATA WEDDING_CONFIG — teks detail acara disusun dari
   // CONFIG.events, CONFIG.date, CONFIG.location lalu dikirim sebagai
   // query string ke Google Calendar (bukan injeksi ke DOM index.html)
@@ -553,7 +563,7 @@
   // ================================================================
 
   // ================================================================
-  // MODULE BOUNDARY: GALERI SLIDER
+  // MODULE BOUNDARY: GALERI SLIDER — STATUS: DO NOT EDIT
   // MEKANIKA UI (scroll, drag, dots, keyboard nav, breakpoint watch)
   // TIDAK TERKAIT INJEKSI DATA — slide-nya sendiri sudah di-render
   // oleh hydrateConfig() dari CONFIG.gallery.images; modul ini hanya
@@ -790,7 +800,7 @@
   // ================================================================
 
   // ================================================================
-  // MODULE BOUNDARY: LIGHTBOX
+  // MODULE BOUNDARY: LIGHTBOX — STATUS: DO NOT EDIT
   // MEKANIKA UI — TIDAK TERKAIT INJEKSI DATA
   // (membaca ulang galleryImages yang sudah dikumpulkan oleh modul Galeri Slider)
   // ================================================================
@@ -854,7 +864,7 @@
   // ================================================================
 
   // ================================================================
-  // MODULE BOUNDARY: AUDIO GAMELAN
+  // MODULE BOUNDARY: AUDIO GAMELAN — STATUS: DO NOT EDIT
   // MEKANIKA UI (play/pause, fade volume) — TIDAK TERKAIT INJEKSI DATA
   // (elemen <source src> & label lagunya sendiri sudah disuntik dari
   //  CONFIG.assets.audio oleh hydrateConfig() di atas)
@@ -980,7 +990,7 @@
   // ================================================================
 
   // ================================================================
-  // MODULE BOUNDARY: AMPLOP DIGITAL (GIFT PANEL + TOMBOL SALIN)
+  // MODULE BOUNDARY: AMPLOP DIGITAL (GIFT PANEL + TOMBOL SALIN) — STATUS: DO NOT EDIT
   // MEKANIKA UI — TIDAK TERKAIT INJEKSI DATA
   // (kartu bank & nilai data-copy-* sudah disuntik oleh hydrateConfig();
   //  modul ini hanya menangani perilaku buka/tutup panel dan efek salin)
@@ -1036,7 +1046,7 @@
   // ================================================================
 
   // ================================================================
-  // MODULE BOUNDARY: BUKU TAMU (GUESTBOOK)
+  // MODULE BOUNDARY: BUKU TAMU (GUESTBOOK) — STATUS: DO NOT EDIT
   // DATA EKSTERNAL (Google Sheets via Apps Script Web App) — DIRENDER
   // DARI HASIL fetch() SAAT RUNTIME, BUKAN DARI WEDDING_CONFIG. Hanya
   // label teks statusnya (loading/success/error, dsb) yang berasal dari
@@ -1232,7 +1242,7 @@
   // ================================================================
 
   // ================================================================
-  // MODULE BOUNDARY: INIT (ENTRY POINT)
+  // MODULE BOUNDARY: INIT (ENTRY POINT) — STATUS: DO NOT EDIT
   // Urutan panggilan penting: hydrateConfig() WAJIB jalan pertama kali
   // karena seluruh modul UI di bawahnya (nav, galeri, audio, dsb)
   // membaca DOM yang sudah disuntik data dari WEDDING_CONFIG.

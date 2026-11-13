@@ -1,4 +1,15 @@
 /* ==============================================================================
+   CORE SYSTEM LAYOUT ENGINE
+   STATUS: DO NOT EDIT (DILARANG MENGUBAH AREA INI TANPA PENGAWASAN DEVELOPER)
+   ==============================================================================
+   Berkas ini berisi seluruh ruleset struktural (reset, grid, flexbox, komponen,
+   animasi) yang membentuk arsitektur tata letak situs. Mengubah nilai di sini
+   secara sembarangan berisiko merusak tampilan di seluruh halaman.
+
+   UNTUK PERUBAHAN TEMA (WARNA, FONT, RADIUS, SPASI, SHADOW, TRANSISI):
+   JANGAN edit berkas ini. Edit HANYA assets/css/variables.css — token di sana
+   otomatis tercermin ke seluruh ruleset style.css melalui fungsi var().
+
    DESIGN TOKENS — dipindahkan ke assets/css/variables.css (Minggu 11)
    File ini WAJIB dimuat SETELAH variables.css pada index.html:
    <link rel="stylesheet" href="css/variables.css" />
@@ -8,7 +19,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: GLOBAL RESET & BASE ELEMENTS
+   BOUNDARY: GLOBAL RESET & BASE ELEMENTS — STATUS: DO NOT EDIT
    Reset box-sizing, elemen dasar (html, body, img, button, a, ul/ol), seleksi teks, dan scrollbar kustom.
    ============================================================================== */
   *,
@@ -97,7 +108,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: TYPOGRAPHY UTILITY CLASSES
+   BOUNDARY: TYPOGRAPHY UTILITY CLASSES — STATUS: DO NOT EDIT
    Kelas teks reusable: .display-hero, .headline-*, .title-script, .body-*, .label-*, .material-symbols-outlined. Dipakai lintas semua section.
    ============================================================================== */
   .display-hero {
@@ -215,7 +226,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: LAYOUT PRIMITIVES
+   BOUNDARY: LAYOUT PRIMITIVES — STATUS: DO NOT EDIT
    .site-main (wrapper utama), .section (pembungkus tiap section + selang-seling warna latar odd/even), .section-heading (eyebrow + judul + rule + lead).
    ============================================================================== */
   .site-main {
@@ -274,7 +285,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: COMPONENT: OPENING CURTAIN
+   BOUNDARY: COMPONENT: OPENING CURTAIN — STATUS: DO NOT EDIT
    Tirai pembuka (id="theatrical-curtain" di index.html): atmosfer awan, wayang kiri/kanan, konten tengah, gunungan, guest-pill.
    ============================================================================== */
   .curtain {
@@ -428,7 +439,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: COMPONENT: BUTTONS & DATE PILL
+   BOUNDARY: COMPONENT: BUTTONS & DATE PILL — STATUS: DO NOT EDIT
    Varian tombol (.btn--gold, .btn--gold-solid, .btn--outline-gold) dan pill tanggal (.date-pill) di hero.
    ============================================================================== */
   .btn {
@@ -497,7 +508,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: COMPONENT: AUDIO WIDGET
+   BOUNDARY: COMPONENT: AUDIO WIDGET — STATUS: DO NOT EDIT
    Tombol pemutar musik gamelan yang melayang (id="audio-widget"): disc berputar, label teks, status playing/paused.
    ============================================================================== */
   .audio-controller {
@@ -554,7 +565,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: COMPONENT: TOAST NOTIFICATION
+   BOUNDARY: COMPONENT: TOAST NOTIFICATION — STATUS: DO NOT EDIT
    Notifikasi mengambang (id="toast-notification") untuk feedback salin nomor rekening/alamat.
    ============================================================================== */
   .toast {
@@ -581,7 +592,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: COMPONENT: BOTTOM NAVIGATION
+   BOUNDARY: COMPONENT: BOTTOM NAVIGATION — STATUS: DO NOT EDIT
    Navigasi bawah melayang (id="bottom-nav"): track scrollable, item, indikator tepi kiri/kanan, state aktif. Termasuk penyesuaian jarak audio-controller terhadap nav di breakpoint <1024px.
    ============================================================================== */
   .bottom-nav {
@@ -709,7 +720,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: SECTION: HERO
+   BOUNDARY: SECTION: HERO — STATUS: DO NOT EDIT
    Section #hero: background pendopo + awan, judul nama mempelai, tanggal acara.
    ============================================================================== */
   .hero {
@@ -792,7 +803,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: SECTION: INTRO DOA
+   BOUNDARY: SECTION: INTRO DOA — STATUS: DO NOT EDIT
    Section #intro-doa: kartu ayat Al-Quran pembuka (.doa-card) dengan ornamen sudut dan garis pemisah.
    ============================================================================== */
   .doa-card {
@@ -866,7 +877,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: SECTION: COUPLE
+   BOUNDARY: SECTION: COUPLE — STATUS: DO NOT EDIT
    Section #couple: grid dua kartu mempelai (.couple-card), konektor '&' di tengah (.couple__connector), chip Instagram (.social-chip).
    ============================================================================== */
   .couple__grid {
@@ -955,7 +966,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: COMPONENT: QUOTE (UTILITY UMUM)
+   BOUNDARY: COMPONENT: QUOTE (UTILITY UMUM) — STATUS: DO NOT EDIT
    Kelas .quote* generik untuk kutipan terpisah dari .doa-card; tidak dipakai section manapun di index.html saat ini, disediakan sebagai utility reusable.
    ============================================================================== */
   .quote { text-align: center; }
@@ -981,7 +992,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: SECTION: EVENTS
+   BOUNDARY: SECTION: EVENTS — STATUS: DO NOT EDIT
    Section #events: grid dua kartu acara (.event-card untuk akad & resepsi), ikon, meta waktu/lokasi, dresscode swatch warna.
    ============================================================================== */
   .events__grid {
@@ -1070,7 +1081,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: SECTION: LOCATION
+   BOUNDARY: SECTION: LOCATION — STATUS: DO NOT EDIT
    Section #location: kartu peta embed Google Maps (.map-card) dan kartu tata tertib tamu (.rules-card).
    ============================================================================== */
   .location__grid {
@@ -1186,7 +1197,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: SECTION: LIVE STREAMING
+   BOUNDARY: SECTION: LIVE STREAMING — STATUS: DO NOT EDIT
    Kartu ajakan nonton live streaming (section #streaming): ikon + teks di
    .streaming__info, tombol "Tonton Siaran" di sisi kanan (desktop) / bawah
    (mobile). Responsive: kolom di mobile, baris di >=768px.
@@ -1233,7 +1244,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: SECTION: STORY TIMELINE
+   BOUNDARY: SECTION: STORY TIMELINE — STATUS: DO NOT EDIT
    Section #story: garis waktu kisah cinta (.story__timeline) zig-zag kiri/kanan desktop, node ikon bulat (.story__node), kartu foto + deskripsi (.story__card, .story__photo).
    ============================================================================== */
   .story__timeline {
@@ -1358,7 +1369,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: SECTION: GALLERY SLIDER
+   BOUNDARY: SECTION: GALLERY SLIDER — STATUS: DO NOT EDIT
    Section #gallery: slider foto horizontal snap-scroll (.gallery-slider__track), tombol navigasi, dots, status aria-live tersembunyi.
    ============================================================================== */
   .gallery-slider {
@@ -1478,7 +1489,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: COMPONENT: LIGHTBOX
+   BOUNDARY: COMPONENT: LIGHTBOX — STATUS: DO NOT EDIT
    Overlay pratinjau foto galeri (id="gallery-lightbox"): tombol tutup, navigasi prev/next, caption.
    ============================================================================== */
   .lightbox {
@@ -1560,7 +1571,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: COMPONENT: VIDEO WRAPPER
+   BOUNDARY: COMPONENT: VIDEO WRAPPER — STATUS: DO NOT EDIT
    Iframe YouTube responsif (section #video). Rasio tetap 16:9 via
    aspect-ratio agar tidak ada "jumping layout" saat iframe dimuat (mencegah
    Cumulative Layout Shift). Lebar desktop disesuaikan lebih lanjut di
@@ -1588,7 +1599,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: SECTION: GIFT (AMPLOP DIGITAL)
+   BOUNDARY: SECTION: GIFT (AMPLOP DIGITAL) — STATUS: DO NOT EDIT
    Section #gift: grid kartu rekening bank (.bank-card) dan kartu alamat kado fisik (.address-card).
    ============================================================================== */
   .gift__grid {
@@ -1668,7 +1679,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: SECTION: WISHES (BUKU TAMU)
+   BOUNDARY: SECTION: WISHES (BUKU TAMU) — STATUS: DO NOT EDIT
    Section #wishes: form ucapan (.guestbook-form, .form-input, .attendance-toggle), status kirim (.guestbook-status), tombol submit dengan animasi titik loading, dan daftar ucapan (.wishes__list, .wish-card, skeleton loading).
    ============================================================================== */
   .wishes__layout {
@@ -1941,7 +1952,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: SECTION: CLOSING FOOTER
+   BOUNDARY: SECTION: CLOSING FOOTER — STATUS: DO NOT EDIT
    Footer #closing: emblem gunungan, ucapan terima kasih, salam penutup, blok dua keluarga mempelai, signature nama.
    ============================================================================== */
   .closing {
@@ -2040,7 +2051,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: KEYFRAME ANIMATIONS
+   BOUNDARY: KEYFRAME ANIMATIONS — STATUS: DO NOT EDIT
    Definisi @keyframes global: spin-slow (disc audio), spin & pulse & bounce (utility umum, tidak semua dipakai langsung).
    ============================================================================== */
   @keyframes spin-slow {
@@ -2070,7 +2081,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: SCROLL REVEAL ANIMATION SYSTEM
+   BOUNDARY: SCROLL REVEAL ANIMATION SYSTEM — STATUS: DO NOT EDIT
    .reveal-item (state tersembunyi -> .is-revealed saat masuk viewport, dikontrol IntersectionObserver di script.js) dan .delay-* untuk stagger animasi.
    ============================================================================== */
   .reveal-item {
@@ -2104,7 +2115,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: RESPONSIVE & ACCESSIBILITY BASE UTILITIES
+   BOUNDARY: RESPONSIVE & ACCESSIBILITY BASE UTILITIES — STATUS: DO NOT EDIT
    Penyesuaian layar sangat kecil (<360px), pembatas lebar konten desktop (--content-max di >=1280px), outline focus-visible, target sentuh minimum 44px, dan dukungan prefers-reduced-motion.
    ============================================================================== */
   @media (max-width: 359px) {
@@ -2179,7 +2190,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: MOBILE-FIRST RESPONSIVE REFINEMENTS
+   BOUNDARY: MOBILE-FIRST RESPONSIVE REFINEMENTS — STATUS: DO NOT EDIT
    Satu pass besar berisi override ukuran/padding/font untuk HAMPIR SEMUA komponen di atas, disusun ulang per komponen (clamp() untuk tipografi fluid, padding dipersempit, dsb). Ini BUKAN komponen baru -- anggap sebagai lapisan "mobile polish" di atas definisi dasar masing-masing komponen.
    ============================================================================== */
   .display-hero { font-size: clamp(2rem, 10.5vw, 2.4rem); }
@@ -2483,7 +2494,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: POST-PASS FIXES & ENHANCEMENTS
+   BOUNDARY: POST-PASS FIXES & ENHANCEMENTS — STATUS: DO NOT EDIT
    Perbaikan & penyempurnaan yang ditulis terakhir agar menang di cascade: sembunyikan section kosong, fix layout map embed asli (menggantikan overlay placeholder lama), tombol arah sebagai <button>, penyempurnaan desktop (grid couple, galeri 3 kolom di >=1024px), ikon slash/pulse-ring pada tombol audio, animasi buka/tutup panel Amplop Digital, state tombol 'Tersalin!', dan clamp() berbasis tinggi viewport untuk closing footer.
    ============================================================================== */
   .section:not(:has(*)) { display: none; }
@@ -2823,7 +2834,7 @@
    ============================================================================== */
 
 /* ==============================================================================
-   BOUNDARY: NAVBAR CLEARANCE FIX (FINAL CASCADE OVERRIDE)
+   BOUNDARY: NAVBAR CLEARANCE FIX (FINAL CASCADE OVERRIDE) — STATUS: DO NOT EDIT
    Sengaja ditulis PALING TERAKHIR di file ini supaya menang di cascade atas semua definisi .hero/.closing duplikat di atas -- memastikan bottom-nav yang melayang tidak menutupi konten hero atau signature closing.
    ============================================================================== */
 /* ---------------------------------------------------------------------

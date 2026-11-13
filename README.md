@@ -77,21 +77,14 @@ Tidak ada proses build (bundler, transpiler, atau package manager) yang diwajibk
 ## Struktur Proyek
 
 ```
-wedding-invitation/
-├── assets/
-│   ├── audio/                 # Berkas musik latar (gending Jawa)
-│   ├── images/                # Foto mempelai, galeri pre-wedding, dll.
-│   ├── ornaments/              # Aset ornamen visual (gunungan, wayang, awan, dsb.)
-│   └── video/                 # Aset video lokal (jika ada)
+.
+├── index.html                 # Markup utama & penanda injeksi data (data-config-*)
 ├── css/
-│   ├── style.css               # Seluruh styling komponen, mengonsumsi token via var()
-│   └── variables.css          # Design Tokens terpusat (WAJIB dimuat sebelum style.css)
+│   ├── variables.css          # Design Tokens terpusat (WAJIB dimuat sebelum style.css)
+│   └── style.css              # Seluruh styling komponen, mengonsumsi token via var()
 ├── js/
 │   ├── config.js              # Single source of truth seluruh konten/data pernikahan
 │   └── script.js              # Mesin hydrateConfig() + seluruh logika interaktif UI
-├── .gitignore                 # Daftar berkas/folder yang diabaikan Git
-├── debug.log                  # Log debug lokal (sebaiknya masuk .gitignore, bukan untuk produksi)
-├── index.html                 # Markup utama & penanda injeksi data (data-config-*)
 └── README.md                  # Dokumentasi proyek (berkas ini)
 ```
 

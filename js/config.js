@@ -1,5 +1,7 @@
 // ================================================================
 // WEDDING_CONFIG — SINGLE SOURCE OF TRUTH
+// STATUS: SAFE TO EDIT (AREA AMAN DATA KLIEN)
+// ================================================================
 // Seluruh teks, URL, dan daftar yang tampil di index.html diambil dari
 // objek ini oleh mesin injeksi (hydrateConfig) di js/script.js. Ubah
 // data pernikahan HANYA di sini — jangan edit index.html/script.js.
@@ -27,7 +29,7 @@
   window.WEDDING_CONFIG = {
 
     // --------------------------------------------------------------
-    // SUB-BOUNDARY: site — metadata <head> (title, description, lang, theme-color)
+    // SUB-BOUNDARY: site — metadata <head> (title, description, lang, theme-color) — STATUS: SAFE TO EDIT
     // --------------------------------------------------------------
     site: {
       title: 'Undangan Pernikahan - Arya & Sekar',
@@ -41,7 +43,9 @@
     // --------------------------------------------------------------
 
     // --------------------------------------------------------------
-    // SUB-BOUNDARY: guestbookApiUrl — endpoint Google Apps Script (GET/POST ucapan)
+    // SUB-BOUNDARY: guestbookApiUrl — endpoint Google Apps Script (GET/POST ucapan) — STATUS: SAFE TO EDIT
+    // PETUNJUK: Ganti HANYA dengan URL hasil "Deploy" Apps Script milik klien
+    // sendiri. Pastikan URL diapit tanda kutip dan diakhiri koma.
     // --------------------------------------------------------------
     guestbookApiUrl: 'https://script.google.com/macros/s/AKfycbyAu49rv8f2iRYlBb2OASWzKrGfiTKgY4kpkFPOJCI-o03Qbu2pAeYYkTQbjkCPv76M/exec',
     // --------------------------------------------------------------
@@ -49,7 +53,7 @@
     // --------------------------------------------------------------
 
     // ================================================================
-    // DATA BOUNDARY: couple — data mempelai (section #couple, #hero, curtain, closing)
+    // DATA BOUNDARY: couple — data mempelai (section #couple, #hero, curtain, closing) — STATUS: SAFE TO EDIT
     // ================================================================
     couple: {
       sectionEyebrow: 'Pinanganten Sarimbit',
@@ -98,7 +102,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: date — tanggal & waktu acara (hero, events, kalender)
+    // DATA BOUNDARY: date — tanggal & waktu acara (hero, events, kalender) — STATUS: SAFE TO EDIT
     // ================================================================
     date: {
       displayLabel: 'Kamis, 24 Desember 2026',
@@ -114,7 +118,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: assets — font, audio, ornamen gambar
+    // DATA BOUNDARY: assets — font, audio, ornamen gambar — STATUS: SAFE TO EDIT
     // ================================================================
     assets: {
 
@@ -163,7 +167,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: messages — teks UI umum (curtain, audio widget, toast, nav)
+    // DATA BOUNDARY: messages — teks UI umum (curtain, audio widget, toast, nav) — STATUS: SAFE TO EDIT
     // ================================================================
     messages: {
       invitationEyebrow: 'Undangan Pernikahan',
@@ -187,7 +191,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: intro — kutipan ayat pembuka (section #intro-doa)
+    // DATA BOUNDARY: intro — kutipan ayat pembuka (section #intro-doa) — STATUS: SAFE TO EDIT
     // ================================================================
     intro: {
       arabic: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
@@ -199,7 +203,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: events — detail acara akad & resepsi (section #events)
+    // DATA BOUNDARY: events — detail acara akad & resepsi (section #events) — STATUS: SAFE TO EDIT
     // ================================================================
     events: {
       eyebrow: 'Rangkaian Pernikahan',
@@ -269,7 +273,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: location — peta, alamat, tata tertib (section #location)
+    // DATA BOUNDARY: location — peta, alamat, tata tertib (section #location) — STATUS: SAFE TO EDIT
     // ================================================================
     location: {
       eyebrow: 'Papan Palenggahan',
@@ -306,7 +310,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: streaming — ajakan nonton live streaming (section #streaming)
+    // DATA BOUNDARY: streaming — ajakan nonton live streaming (section #streaming) — STATUS: SAFE TO EDIT
     // ================================================================
     streaming: {
       eyebrow: 'Siaran Langsung',
@@ -320,7 +324,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: story — timeline kisah cinta (section #story)
+    // DATA BOUNDARY: story — timeline kisah cinta (section #story) — STATUS: SAFE TO EDIT
     // JS-RENDERED LIST — di-render oleh hydrateConfig() dari story.items[]
     // ke ol[data-config-story] di index.html
     // ================================================================
@@ -350,7 +354,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: gallery — foto pre-wedding (section #gallery + lightbox)
+    // DATA BOUNDARY: gallery — foto pre-wedding (section #gallery + lightbox) — STATUS: SAFE TO EDIT
     // JS-RENDERED LIST — di-render oleh hydrateConfig() dari gallery.images[]
     // ke [data-config-gallery] di index.html
     // ================================================================
@@ -392,7 +396,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: video — video YouTube momen pernikahan (section #video)
+    // DATA BOUNDARY: video — video YouTube momen pernikahan (section #video) — STATUS: SAFE TO EDIT
     // Iframe YouTube responsif (rasio 16:9) tanpa fungsi JS khusus — src
     // & title diisi oleh hydrateConfig() via data-config-src/data-config-title.
     // GANTI VIDEO: ganti embedUrl dengan ID video YouTube yang sebenarnya.
@@ -408,7 +412,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: gift — amplop digital (section #gift)
+    // DATA BOUNDARY: gift — amplop digital (section #gift) — STATUS: SAFE TO EDIT
     // ================================================================
     gift: {
       eyebrow: 'Kado & Tanda Kasih',
@@ -448,7 +452,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: wishes — teks form & status buku tamu (section #wishes)
+    // DATA BOUNDARY: wishes — teks form & status buku tamu (section #wishes) — STATUS: SAFE TO EDIT
     // CATATAN: isi daftar ucapan sendiri BUKAN dari sini — itu data
     // eksternal hasil fetch() ke guestbookApiUrl (lihat renderGuestbookEntries
     // di js/script.js). Blok ini hanya label/teks statis form & pesan status.
@@ -481,7 +485,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: closing — teks penutup / footer (section #closing)
+    // DATA BOUNDARY: closing — teks penutup / footer (section #closing) — STATUS: SAFE TO EDIT
     // ================================================================
     closing: {
       title: 'Terima Kasih',
@@ -496,7 +500,7 @@
     // ================================================================
 
     // ================================================================
-    // DATA BOUNDARY: nav — item navigasi bawah (komponen Bottom Navigation)
+    // DATA BOUNDARY: nav — item navigasi bawah (komponen Bottom Navigation) — STATUS: SAFE TO EDIT
     // JS-RENDERED LIST — di-render oleh hydrateConfig() dari nav[]
     // ke [data-config-nav] di index.html
     // ================================================================
