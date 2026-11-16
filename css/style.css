@@ -416,6 +416,7 @@
   .guest-pill {
     background: rgba(var(--color-black-rgb), 0.4);
     border: 1px solid rgba(var(--gold-bright-rgb), 0.3);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     padding: 0.9rem 1.25rem;
     border-radius: var(--radius-lg);
@@ -525,6 +526,7 @@
     border-radius: var(--radius-full);
     background: rgba(var(--sogan-card-rgb), 0.9);
     border: 1px solid rgba(var(--gold-bright-rgb), 0.4);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     box-shadow: 0 8px 24px rgba(var(--color-black-rgb), 0.6);
     color: var(--gold-bright);
@@ -621,8 +623,8 @@
     gap: 0.1rem;
     background: rgba(var(--sogan-card-rgb), 0.92);
     border: 1px solid rgba(var(--gold-bright-rgb), 0.35);
-    backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
     box-shadow: 0 10px 30px rgba(var(--color-black-rgb), 0.55);
     border-radius: var(--radius-full);
     padding: 0.28rem 0.28rem;
@@ -1437,6 +1439,7 @@
     border-radius: var(--radius-full);
     background: rgba(var(--sogan-card-rgb), 0.85);
     border: 1px solid rgba(var(--gold-bright-rgb), 0.4);
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     color: var(--gold-bright);
     display: flex;
@@ -1497,6 +1500,7 @@
     inset: 0;
     z-index: 60;
     background: rgba(var(--color-black-rgb), 0.9);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     display: none;
     align-items: center;
@@ -2621,6 +2625,7 @@
   .gallery-slider__nav {
     width: 3rem;
     height: 3rem;
+    -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: rgba(var(--sogan-card-rgb), 0.92);
     overflow: hidden; 
@@ -2648,6 +2653,7 @@
     border: 1px solid rgba(var(--gold-bright-rgb), 0.4);
     border-radius: var(--radius-full);
     background: rgba(var(--sogan-card-rgb), 0.92);
+    -webkit-backdrop-filter: none;
     backdrop-filter: none;
     color: var(--gold-foil);
     font-size: var(--fs-label-caps);
