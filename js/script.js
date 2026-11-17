@@ -603,6 +603,10 @@
     const g = CONFIG.gallery;
     const visible = getVisibleSlides();
     const positions = getMaxSlideIndex() + 1;
+    // Dirangkai di DocumentFragment dulu (di luar DOM aktif) lalu
+    // ditempel sekali di akhir — menghindari reflow berulang per-dot
+    // seperti appendChild() langsung ke DOM dalam loop.
+    const fragment = document.createDocumentFragment();
 
     for (let index = 0; index < positions; index += 1) {
       const dot = document.createElement('button');
@@ -616,9 +620,10 @@
           : `${g.statusRangePrefix} ${index + 1} ${g.statusOf} ${gallerySlideCount}`
       );
       dot.addEventListener('click', () => goToSlide(index));
-      dom.galleryDots.appendChild(dot);
+      fragment.appendChild(dot);
     }
 
+    dom.galleryDots.appendChild(fragment);
     updateGalleryDots();
   }
 
